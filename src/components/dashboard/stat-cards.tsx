@@ -1,45 +1,73 @@
-import { CalendarCheck, Users, Wallet, TrendingUp, ArrowUpRight } from "lucide-react"
-import { cn } from "@/lib/utils"
+import {
+  ArrowUpRight,
+  CalendarCheck,
+  TrendingUp,
+  Users,
+  Wallet,
+} from "lucide-react";
 
-const stats = [
-  {
-    label: "Séances cette semaine",
-    value: "18",
-    delta: "+3",
-    hint: "vs semaine dernière",
-    icon: CalendarCheck,
-    tone: "primary" as const,
-  },
-  {
-    label: "Nouveaux clients",
-    value: "6",
-    delta: "+2",
-    hint: "ce mois-ci",
-    icon: Users,
-    tone: "accent" as const,
-  },
-  {
-    label: "Revenus du mois",
-    value: "3 820 €",
-    delta: "+17 %",
-    hint: "objectif 4 000 €",
-    icon: Wallet,
-    tone: "primary" as const,
-  },
-  {
-    label: "Taux de réussite",
-    value: "92 %",
-    delta: "+4 pts",
-    hint: "objectifs atteints",
-    icon: TrendingUp,
-    tone: "accent" as const,
-  },
-]
+import type { MonthlyStatsData } from "@/actions/educator";
+import { cn } from "@/lib/utils";
 
-export function StatCards() {
+const euroFormatter = new Intl.NumberFormat("fr-FR", {
+  style: "currency",
+  currency: "EUR",
+  maximumFractionDigits: 0,
+});
+
+type StatCardsProps = {
+  stats: MonthlyStatsData | null;
+};
+
+export function StatCards({ stats }: StatCardsProps) {
+  const completed = stats?.completedSessionsCount ?? 0;
+  const dogs = stats?.distinctDogsCount ?? 0;
+  const revenue = stats ? euroFormatter.format(stats.revenueCents / 100) : "—";
+  const successRate =
+    stats && stats.totalBookingsInPeriod > 0
+      ? Math.round(
+          (stats.completedSessionsCount / stats.totalBookingsInPeriod) * 100,
+        )
+      : null;
+
+  const cards = [
+    {
+      label: "Séances terminées",
+      value: stats ? String(completed) : "—",
+      delta: stats ? `${completed}` : "—",
+      hint: "depuis le 1er du mois (Paris)",
+      icon: CalendarCheck,
+      tone: "primary" as const,
+    },
+    {
+      label: "Chiens suivis",
+      value: stats ? String(dogs) : "—",
+      delta: stats ? `${dogs}` : "—",
+      hint: "chiens distincts ce mois",
+      icon: Users,
+      tone: "accent" as const,
+    },
+    {
+      label: "Revenus du mois",
+      value: revenue,
+      delta: stats ? revenue : "—",
+      hint: "séances terminées uniquement",
+      icon: Wallet,
+      tone: "primary" as const,
+    },
+    {
+      label: "Taux de complétion",
+      value: successRate !== null ? `${successRate} %` : "—",
+      delta: successRate !== null ? `${successRate} %` : "—",
+      hint: "terminées / séances du mois",
+      icon: TrendingUp,
+      tone: "accent" as const,
+    },
+  ];
+
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-      {stats.map((stat) => (
+      {cards.map((stat) => (
         <div
           key={stat.label}
           className="rounded-2xl border border-border bg-card p-5 shadow-sm transition-shadow hover:shadow-md"
@@ -67,11 +95,13 @@ export function StatCards() {
               {stat.delta}
             </span>
           </div>
-          <p className="mt-4 text-3xl font-bold tracking-tight text-foreground">{stat.value}</p>
+          <p className="mt-4 text-3xl font-bold tracking-tight text-foreground">
+            {stat.value}
+          </p>
           <p className="mt-1 text-sm font-medium text-foreground">{stat.label}</p>
           <p className="text-xs text-muted-foreground">{stat.hint}</p>
         </div>
       ))}
     </div>
-  )
+  );
 }

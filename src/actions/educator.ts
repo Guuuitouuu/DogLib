@@ -1,0 +1,225 @@
+"use server";
+
+import { auth } from "@clerk/nextjs/server";
+import { z } from "zod";
+
+import {
+  BookingStatus,
+  Role,
+  type Booking,
+  type Dog,
+  type Service,
+  type User,
+} from "@/generated/prisma/client";
+import type { ActionResult } from "@/lib/action-result";
+import {
+  formatTimeParis,
+  getParisDayBoundsUtc,
+  getParisMonthToTodayBoundsUtc,
+} from "@/lib/paris-time";
+import { prisma } from "@/lib/prisma";
+
+export type TodayBookingItem = {
+  id: string;
+  time: string;
+  dogName: string;
+  ownerName: string;
+  serviceTitle: string;
+  location: string;
+  status: BookingStatus;
+};
+
+export type MonthlyStatsData = {
+  completedSessionsCount: number;
+  revenueCents: number;
+  distinctDogsCount: number;
+  totalBookingsInPeriod: number;
+};
+
+const updateBookingReportSchema = z.object({
+  bookingId: z.string().min(1),
+  report: z.string().min(1).max(20_000),
+});
+
+async function requireEducatorProfileId(): Promise<
+  ActionResult<{ educatorProfileId: string; city: string; address: string }>
+> {
+  const { userId } = await auth();
+  if (!userId) {
+    return { success: false, error: "Vous devez être connecté." };
+  }
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: { clerkId: userId },
+      include: { educatorProfile: true },
+    });
+
+    if (!user || user.role !== Role.EDUCATOR || !user.educatorProfile) {
+      return { success: false, error: "Profil éducateur introuvable." };
+    }
+
+    return {
+      success: true,
+      data: {
+        educatorProfileId: user.educatorProfile.id,
+        city: user.educatorProfile.city,
+        address: user.educatorProfile.address,
+      },
+    };
+  } catch {
+    return { success: false, error: "Impossible de charger le profil éducateur." };
+  }
+}
+
+type BookingWithRelations = Booking & {
+  dog: Dog;
+  service: Service;
+  client: Pick<User, "name">;
+};
+
+function mapTodayBooking(
+  booking: BookingWithRelations,
+  location: string,
+): TodayBookingItem {
+  return {
+    id: booking.id,
+    time: formatTimeParis(booking.dateTime),
+    dogName: booking.dog.name,
+    ownerName: booking.client.name,
+    serviceTitle: booking.service.title,
+    location,
+    status: booking.status,
+  };
+}
+
+export async function getTodayBookings(): Promise<
+  ActionResult<TodayBookingItem[]>
+> {
+  const educator = await requireEducatorProfileId();
+  if (!educator.success) {
+    return { success: false, error: educator.error };
+  }
+
+  const { startUtc, endUtc } = getParisDayBoundsUtc();
+  const location = `${educator.data.address}, ${educator.data.city}`;
+
+  try {
+    const bookings = await prisma.booking.findMany({
+      where: {
+        educatorProfileId: educator.data.educatorProfileId,
+        dateTime: { gte: startUtc, lte: endUtc },
+        status: { not: BookingStatus.CANCELLED },
+      },
+      include: {
+        dog: true,
+        service: true,
+        client: { select: { name: true } },
+      },
+      orderBy: { dateTime: "asc" },
+    });
+
+    return {
+      success: true,
+      data: bookings.map((b) => mapTodayBooking(b, location)),
+    };
+  } catch {
+    return { success: false, error: "Impossible de charger les séances du jour." };
+  }
+}
+
+export async function getMonthlyStats(): Promise<
+  ActionResult<MonthlyStatsData>
+> {
+  const educator = await requireEducatorProfileId();
+  if (!educator.success) {
+    return { success: false, error: educator.error };
+  }
+
+  const { startUtc, endUtc } = getParisMonthToTodayBoundsUtc();
+
+  try {
+    const educatorProfileId = educator.data.educatorProfileId;
+
+    const [completedBookings, totalBookingsInPeriod, distinctDogs] =
+      await Promise.all([
+        prisma.booking.findMany({
+          where: {
+            educatorProfileId,
+            status: BookingStatus.COMPLETED,
+            dateTime: { gte: startUtc, lte: endUtc },
+          },
+          include: { service: true },
+        }),
+        prisma.booking.count({
+          where: {
+            educatorProfileId,
+            dateTime: { gte: startUtc, lte: endUtc },
+            status: { not: BookingStatus.CANCELLED },
+          },
+        }),
+        prisma.booking.findMany({
+          where: {
+            educatorProfileId,
+            dateTime: { gte: startUtc, lte: endUtc },
+          },
+          distinct: ["dogId"],
+          select: { dogId: true },
+        }),
+      ]);
+
+    const revenueCents = completedBookings.reduce(
+      (sum, booking) => sum + booking.service.price,
+      0,
+    );
+
+    return {
+      success: true,
+      data: {
+        completedSessionsCount: completedBookings.length,
+        revenueCents,
+        distinctDogsCount: distinctDogs.length,
+        totalBookingsInPeriod,
+      },
+    };
+  } catch {
+    return { success: false, error: "Impossible de charger les statistiques." };
+  }
+}
+
+export async function updateBookingReport(
+  input: unknown,
+): Promise<{ success: boolean; error?: string }> {
+  const parsed = updateBookingReportSchema.safeParse(input);
+  if (!parsed.success) {
+    return { success: false, error: "Données invalides." };
+  }
+
+  const educator = await requireEducatorProfileId();
+  if (!educator.success) {
+    return { success: false, error: educator.error };
+  }
+
+  try {
+    const booking = await prisma.booking.findFirst({
+      where: {
+        id: parsed.data.bookingId,
+        educatorProfileId: educator.data.educatorProfileId,
+      },
+      select: { id: true },
+    });
+
+    if (!booking) {
+      return { success: false, error: "Séance introuvable ou accès refusé." };
+    }
+
+    await prisma.booking.update({
+      where: { id: booking.id },
+      data: { postSessionReport: parsed.data.report },
+    });
+
+    return { success: true };
+  } catch {
+    return { success: false, error: "Impossible d'enregistrer le compte-rendu." };
+  }
+}
