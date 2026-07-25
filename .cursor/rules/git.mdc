@@ -1,0 +1,24 @@
+---
+description: Commits Git après changements majeurs (DogLib)
+alwaysApply: true
+---
+
+# Git & sauvegardes
+
+Le dépôt Git est initialisé sur ce projet. **Après chaque changement majeur** (feature terminée, intégration, refacto cohérente, fix important), **créer un commit** sans attendre que l’utilisateur le redemande.
+
+## Quand commiter
+
+- Oui : feature ou slice livrable, migration Prisma, auth, dashboard, config stack, correction de bug significative.
+- Non : WIP au milieu d’une tâche, typo isolée, ou l’utilisateur a dit de ne pas commiter.
+
+## Protocole
+
+1. Vérifier `git status` — ne **jamais** ajouter `.env`, `.env.local`, secrets, `node_modules`, `.next`.
+2. Message en **français ou anglais**, une phrase claire sur le *pourquoi*.
+3. Un commit par changement majeur logique (pas un commit fourre-tout).
+4. Ne pas `git push` sauf demande explicite.
+
+## Branche par défaut
+
+Travailler sur la branche courante ; pas de force push sur `main`/`master`.

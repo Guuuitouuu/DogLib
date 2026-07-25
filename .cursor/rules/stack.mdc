@@ -1,0 +1,76 @@
+---
+description: Stack technique et conventions du projet (Next.js, Prisma, Clerk, Stripe)
+alwaysApply: true
+---
+
+# Stack & conventions
+
+## Stack technique
+
+| Couche | Choix |
+|--------|--------|
+| Framework | **Next.js App Router** uniquement — pas de Pages Router (`pages/`) |
+| Langage | **TypeScript** (`strict: true`) |
+| Styles | **Tailwind CSS** |
+| UI | **shadcn/ui** — base color **zinc**, variables CSS, **Lucide** pour les icônes |
+| Données | **Prisma ORM** + **PostgreSQL** |
+| Auth | **Clerk** |
+| Paiements | **Stripe Connect** (marketplace, comptes connectés) |
+
+Clients singleton : Prisma et Stripe dans `lib/` (ex. `lib/prisma.ts`, `lib/stripe.ts`), jamais instanciés dans les composants.
+
+## Structure des dossiers
+
+Le projet utilise le dossier `src/`. Chemins effectifs :
+
+- `src/app/` — routes, layouts, pages (App Router)
+- `src/actions/` — Server Actions (`"use server"`)
+- `src/lib/` — utilitaires, client Prisma, client Stripe, helpers partagés
+- `src/components/ui/` — primitives shadcn (générées / maintenues via CLI)
+- `src/components/` — composants métier (features, layouts réutilisables)
+
+Alias d’import : `@/*` → `src/*`.
+
+## Données & Server Actions
+
+- **Toute** lecture/écriture base passe par des **Server Actions** dans `src/actions/`. **Interdit** : `PrismaClient` ou requêtes Prisma dans un composant `"use client"` ou dans le corps d’un event handler client.
+- Chaque action est **typée de bout en bout** (params + retour). Valider les entrées avec **Zod** (`schema.parse` / `safeParse`) **avant** tout appel Prisma.
+- Pattern de retour uniforme — pas de `throw` remonté au client sans être capturé et mappé :
+
+```ts
+type ActionResult<T> =
+  | { success: true; data: T }
+  | { success: false; error: string };
+
+export async function exampleAction(input: unknown): Promise<ActionResult<Example>> {
+  const parsed = exampleSchema.safeParse(input);
+  if (!parsed.success) {
+    return { success: false, error: "Entrée invalide" };
+  }
+  try {
+    const data = await prisma.example.create({ data: parsed.data });
+    return { success: true, data };
+  } catch {
+    return { success: false, error: "Erreur serveur" };
+  }
+}
+```
+
+Côté client : brancher sur `success` / `error` / `data` ; ne pas supposer qu’une action réussit sans vérifier.
+
+## Auth & paiements
+
+- **Clerk** : protéger routes et actions serveur (session utilisateur côté serveur avant mutations sensibles).
+- **Stripe Connect** : flux marketplace (comptes connectés, webhooks) centralisés dans `lib/` + actions dédiées ; ne pas exposer de secrets côté client.
+
+## UI
+
+- Préférer les composants **shadcn** (`Button`, `Card`, `Input`, `Dialog`, etc.) plutôt que du HTML brut pour l’interactif et la mise en forme.
+- **Dark mode** supporté (classes / variables du thème zinc).
+- **Spacing** : échelle Tailwind cohérente (`gap-4`, `p-6`, etc.) — éviter les valeurs arbitraires sauf cas justifié.
+- **Accessibilité de base** : labels associés aux champs, attributs ARIA sur dialogs/menus, focus visible, contraste lisible.
+
+## Rappels Next.js
+
+- Server Components par défaut ; `"use client"` seulement si hooks, événements ou APIs navigateur.
+- Données sensibles et secrets uniquement côté serveur (actions, route handlers, `lib/`).

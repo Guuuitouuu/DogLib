@@ -1,0 +1,110 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  EDUCATOR
+  CLIENT
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+}
+
+model User {
+  id        String   @id @default(cuid())
+  clerkId   String   @unique
+  email     String   @unique
+  name      String
+  phone     String?
+  role      Role
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  educatorProfile EducatorProfile?
+  dogs            Dog[]
+  clientBookings  Booking[]        @relation("ClientBookings")
+}
+
+model EducatorProfile {
+  id              String  @id @default(cuid())
+  userId          String  @unique
+  bio             String? @db.Text
+  address         String
+  city            String
+  zipCode         String
+  lat             Float
+  lng             Float
+  siret           String? @unique
+  stripeAccountId String?
+
+  user             User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  services         Service[]
+  educatorBookings Booking[]      @relation("EducatorBookings")
+  availabilities   Availability[]
+}
+
+model Dog {
+  id              String  @id @default(cuid())
+  userId          String
+  name            String
+  breed           String?
+  age             Int?
+  weight          Float?
+  behavioralNotes String? @db.Text
+  medicalNotes    String? @db.Text
+
+  owner    User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bookings Booking[]
+}
+
+model Service {
+  id                String  @id @default(cuid())
+  educatorProfileId String
+  title             String
+  description       String? @db.Text
+  durationMinutes   Int
+  price             Int
+
+  educatorProfile EducatorProfile @relation(fields: [educatorProfileId], references: [id], onDelete: Cascade)
+  bookings        Booking[]
+}
+
+model Booking {
+  id                String        @id @default(cuid())
+  userId            String
+  dogId             String
+  serviceId         String
+  educatorProfileId String
+  dateTime          DateTime
+  status            BookingStatus @default(PENDING)
+  postSessionReport String?       @db.Text
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  client    User            @relation("ClientBookings", fields: [userId], references: [id])
+  dog       Dog             @relation(fields: [dogId], references: [id])
+  service   Service         @relation(fields: [serviceId], references: [id])
+  educator  EducatorProfile @relation("EducatorBookings", fields: [educatorProfileId], references: [id])
+}
+
+model Availability {
+  id                String @id @default(cuid())
+  educatorProfileId String
+  dayOfWeek         Int
+  startTime         String
+  endTime           String
+  isActive          Boolean @default(true)
+
+  educatorProfile EducatorProfile @relation(fields: [educatorProfileId], references: [id], onDelete: Cascade)
+
+  @@index([educatorProfileId, dayOfWeek])
+}
