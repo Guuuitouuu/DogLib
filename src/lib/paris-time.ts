@@ -75,7 +75,7 @@ export function getParisMonthToTodayBoundsUtc(reference = new Date()): {
   startUtc: Date;
   endUtc: Date;
 } {
-  const { year, month, day } = getParisYmd(reference);
+  const { year, month } = getParisYmd(reference);
   const { endUtc } = getParisDayBoundsUtc(reference);
   return {
     startUtc: parisWallTimeToUtc(year, month, 1, 0, 0, 0, 0),
@@ -99,4 +99,55 @@ export function formatParisDayLabel(reference = new Date()): string {
     day: "numeric",
     month: "long",
   }).format(reference);
+}
+
+export function parisDateStringToBounds(dateStr: string): {
+  startUtc: Date;
+  endUtc: Date;
+} {
+  const [year, month, day] = dateStr.split("-").map(Number);
+  if (!year || !month || !day) {
+    throw new Error("Invalid date string");
+  }
+  return {
+    startUtc: parisWallTimeToUtc(year, month, day, 0, 0, 0, 0),
+    endUtc: parisWallTimeToUtc(year, month, day, 23, 59, 59, 999),
+  };
+}
+
+export function getParisWeekdayFromDateString(dateStr: string): number {
+  const [year, month, day] = dateStr.split("-").map(Number);
+  const noonUtc = parisWallTimeToUtc(year, month, day, 12, 0, 0, 0);
+  const weekday = new Intl.DateTimeFormat("en-US", {
+    timeZone: PARIS,
+    weekday: "long",
+  }).format(noonUtc);
+  const map: Record<string, number> = {
+    Sunday: 0,
+    Monday: 1,
+    Tuesday: 2,
+    Wednesday: 3,
+    Thursday: 4,
+    Friday: 5,
+    Saturday: 6,
+  };
+  return map[weekday] ?? 0;
+}
+
+export function parisSlotStartUtc(
+  dateStr: string,
+  hour: number,
+  minute: number,
+): Date {
+  const [year, month, day] = dateStr.split("-").map(Number);
+  return parisWallTimeToUtc(year, month, day, hour, minute, 0, 0);
+}
+
+export function toParisDateString(date: Date): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: PARIS,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(date);
 }
