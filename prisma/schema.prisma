@@ -73,9 +73,12 @@ model Service {
   description       String? @db.Text
   durationMinutes   Int
   price             Int
+  isActive          Boolean @default(true)
 
   educatorProfile EducatorProfile @relation(fields: [educatorProfileId], references: [id], onDelete: Cascade)
   bookings        Booking[]
+
+  @@index([educatorProfileId, isActive])
 }
 
 model Booking {

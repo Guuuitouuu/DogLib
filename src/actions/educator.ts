@@ -1,11 +1,9 @@
 "use server";
 
-import { auth } from "@clerk/nextjs/server";
 import { z } from "zod";
 
 import {
   BookingStatus,
-  Role,
   type Booking,
   type Dog,
   type Service,
@@ -17,6 +15,7 @@ import {
   getParisDayBoundsUtc,
   getParisMonthToTodayBoundsUtc,
 } from "@/lib/paris-time";
+import { requireEducatorProfile } from "@/lib/require-educator";
 import { prisma } from "@/lib/prisma";
 
 export type TodayBookingItem = {
@@ -41,35 +40,8 @@ const updateBookingReportSchema = z.object({
   report: z.string().min(1).max(20_000),
 });
 
-async function requireEducatorProfileId(): Promise<
-  ActionResult<{ educatorProfileId: string; city: string; address: string }>
-> {
-  const { userId } = await auth();
-  if (!userId) {
-    return { success: false, error: "Vous devez être connecté." };
-  }
-
-  try {
-    const user = await prisma.user.findUnique({
-      where: { clerkId: userId },
-      include: { educatorProfile: true },
-    });
-
-    if (!user || user.role !== Role.EDUCATOR || !user.educatorProfile) {
-      return { success: false, error: "Profil éducateur introuvable." };
-    }
-
-    return {
-      success: true,
-      data: {
-        educatorProfileId: user.educatorProfile.id,
-        city: user.educatorProfile.city,
-        address: user.educatorProfile.address,
-      },
-    };
-  } catch {
-    return { success: false, error: "Impossible de charger le profil éducateur." };
-  }
+async function requireEducatorProfileId() {
+  return requireEducatorProfile();
 }
 
 type BookingWithRelations = Booking & {
