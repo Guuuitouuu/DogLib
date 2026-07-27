@@ -85,5 +85,14 @@ export default function RootLayout({
     return content;
   }
 
-  return <ClerkProvider>{content}</ClerkProvider>;
+  return (
+    <ClerkProvider
+      signInUrl="/sign-in"
+      signUpUrl="/sign-up"
+      signInFallbackRedirectUrl="/auth/continue"
+      signUpFallbackRedirectUrl="/auth/continue"
+    >
+      {content}
+    </ClerkProvider>
+  );
 }
