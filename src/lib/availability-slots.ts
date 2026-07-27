@@ -3,6 +3,7 @@ import {
   formatTimeParis,
   parisSlotStartUtc,
 } from "@/lib/paris-time";
+import { rangesOverlap } from "@/lib/booking-overlap";
 
 type AvailabilityRow = {
   startTime: string;
@@ -17,15 +18,6 @@ type BookingRow = {
 function parseHm(value: string): number {
   const [h, m] = value.split(":").map(Number);
   return h * 60 + (m ?? 0);
-}
-
-function rangesOverlap(
-  aStart: Date,
-  aEnd: Date,
-  bStart: Date,
-  bEnd: Date,
-): boolean {
-  return aStart < bEnd && aEnd > bStart;
 }
 
 export type AvailableSlot = {

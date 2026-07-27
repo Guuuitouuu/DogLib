@@ -19,11 +19,16 @@ import { cn } from "@/lib/utils"
 const nav = [
   { label: "Tableau de bord", icon: LayoutDashboard, href: "/dashboard" },
   { label: "Clients", icon: Users, href: "/dashboard/clients", badge: "24" },
-  { label: "Chiens", icon: PawPrint, href: "/dashboard/chiens", badge: "31" },
+  { label: "Chiens", icon: PawPrint, href: "/dashboard/chiens", badgeKey: "dogsCount" as const },
   { label: "Agenda", icon: CalendarDays, href: "/dashboard/agenda" },
   { label: "Disponibilités", icon: Clock, href: "/dashboard/disponibilites" },
   { label: "Services", icon: Briefcase, href: "/dashboard/services" },
-  { label: "Séances", icon: GraduationCap, href: "/dashboard/seances" },
+  {
+    label: "Séances",
+    icon: GraduationCap,
+    href: "/dashboard/seances",
+    badgeKey: "pendingSessions" as const,
+  },
   { label: "Facturation", icon: Receipt, href: "/dashboard/facturation", badge: "3" },
 ]
 
@@ -32,11 +37,30 @@ const secondary = [
   { label: "Aide", icon: LifeBuoy, href: "/dashboard/aide" },
 ]
 
-export function Sidebar() {
+export function Sidebar({
+  pendingSessionsCount = 0,
+  dogsCount = 0,
+}: {
+  pendingSessionsCount?: number;
+  dogsCount?: number;
+}) {
   const pathname = usePathname()
 
   const isActive = (href: string) =>
     href === "/dashboard" ? pathname === "/dashboard" : pathname.startsWith(href)
+
+  function resolveBadge(item: (typeof nav)[number]): string | null {
+    if ("badgeKey" in item && item.badgeKey === "pendingSessions") {
+      return pendingSessionsCount > 0 ? String(pendingSessionsCount) : null
+    }
+    if ("badgeKey" in item && item.badgeKey === "dogsCount") {
+      return dogsCount > 0 ? String(dogsCount) : null
+    }
+    if ("badge" in item && item.badge) {
+      return item.badge
+    }
+    return null
+  }
 
   return (
     <aside className="hidden w-64 shrink-0 flex-col gap-6 border-r border-border bg-sidebar px-4 py-6 lg:flex">
@@ -56,6 +80,7 @@ export function Sidebar() {
         </p>
         {nav.map((item) => {
           const active = isActive(item.href)
+          const badge = resolveBadge(item)
           return (
             <Link
               key={item.label}
@@ -69,7 +94,7 @@ export function Sidebar() {
             >
               <item.icon className="size-[18px]" />
               <span className="flex-1 text-left">{item.label}</span>
-              {item.badge ? (
+              {badge ? (
                 <span
                   className={cn(
                     "rounded-full px-2 py-0.5 text-xs font-semibold",
@@ -77,8 +102,13 @@ export function Sidebar() {
                       ? "bg-primary-foreground/20 text-primary-foreground"
                       : "bg-secondary text-secondary-foreground",
                   )}
+                  aria-label={
+                    "badgeKey" in item && item.badgeKey === "pendingSessions"
+                      ? `${badge} séances en attente`
+                      : undefined
+                  }
                 >
-                  {item.badge}
+                  {badge}
                 </span>
               ) : null}
             </Link>

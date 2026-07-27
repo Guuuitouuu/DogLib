@@ -1,13 +1,14 @@
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 
+import { Role } from "@/generated/prisma/client";
 import { OnboardingRolePicker } from "@/components/onboarding/onboarding-role-picker";
-
-function resolveRole(metadata: unknown): string | undefined {
-  if (!metadata || typeof metadata !== "object") return undefined;
-  const role = (metadata as { role?: unknown }).role;
-  return role === "EDUCATOR" || role === "CLIENT" ? role : undefined;
-}
+import { resolveClerkRole } from "@/lib/clerk-role";
+import { clientAddressIsComplete } from "@/lib/client-location";
+import {
+  educatorProfileIsComplete,
+  findAppUserByClerkId,
+} from "@/lib/db-user";
 
 export default async function OnboardingPage() {
   const { userId } = await auth();
@@ -15,14 +16,29 @@ export default async function OnboardingPage() {
     redirect("/sign-in");
   }
 
-  const user = await currentUser();
-  const role = resolveRole(user?.publicMetadata);
+  const appUser = await findAppUserByClerkId(userId);
 
-  if (role === "EDUCATOR") {
-    redirect("/dashboard");
+  if (appUser?.role === Role.CLIENT) {
+    if (clientAddressIsComplete(appUser)) {
+      redirect("/account");
+    }
+    redirect("/onboarding/client");
   }
-  if (role === "CLIENT") {
-    redirect("/");
+
+  if (appUser?.role === Role.EDUCATOR) {
+    if (educatorProfileIsComplete(appUser)) {
+      redirect("/dashboard");
+    }
+    redirect("/onboarding/educator");
+  }
+
+  const clerkUser = await currentUser();
+  const metaRole = resolveClerkRole(clerkUser?.publicMetadata);
+  if (metaRole === Role.CLIENT) {
+    redirect("/onboarding/client");
+  }
+  if (metaRole === Role.EDUCATOR) {
+    redirect("/onboarding/educator");
   }
 
   return (

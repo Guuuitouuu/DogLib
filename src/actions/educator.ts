@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import {
@@ -161,7 +162,7 @@ export async function getMonthlyStats(): Promise<
 
 export async function updateBookingReport(
   input: unknown,
-): Promise<{ success: boolean; error?: string }> {
+): Promise<ActionResult<{ bookingId: string }>> {
   const parsed = updateBookingReportSchema.safeParse(input);
   if (!parsed.success) {
     return { success: false, error: "Données invalides." };
@@ -178,7 +179,7 @@ export async function updateBookingReport(
         id: parsed.data.bookingId,
         educatorProfileId: educator.data.educatorProfileId,
       },
-      select: { id: true },
+      select: { id: true, dogId: true },
     });
 
     if (!booking) {
@@ -187,10 +188,15 @@ export async function updateBookingReport(
 
     await prisma.booking.update({
       where: { id: booking.id },
-      data: { postSessionReport: parsed.data.report },
+      data: { postSessionReport: parsed.data.report.trim() },
     });
 
-    return { success: true };
+    revalidatePath("/dashboard/seances");
+    revalidatePath(`/dashboard/seances/${booking.id}`);
+    revalidatePath("/dashboard/chiens");
+    revalidatePath(`/dashboard/chiens/${booking.dogId}`);
+
+    return { success: true, data: { bookingId: booking.id } };
   } catch {
     return { success: false, error: "Impossible d'enregistrer le compte-rendu." };
   }

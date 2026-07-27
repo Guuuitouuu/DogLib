@@ -26,6 +26,11 @@ model User {
   name      String
   phone     String?
   role      Role
+  address   String?
+  city      String?
+  zipCode   String?
+  lat       Float?
+  lng       Float?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

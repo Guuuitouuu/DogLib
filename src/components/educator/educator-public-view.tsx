@@ -552,10 +552,14 @@ function BookingDialog({
 export function EducatorPublicHeader({
   name,
   city,
+  address,
+  zipCode,
   bio,
 }: {
   name: string;
   city: string;
+  address: string;
+  zipCode: string;
   bio: string | null;
 }) {
   return (
@@ -568,7 +572,7 @@ export function EducatorPublicHeader({
         </h1>
         <p className="mt-2 flex items-center gap-1.5 text-muted-foreground">
           <MapPin className="size-4 shrink-0" aria-hidden />
-          {city}
+          {address}, {zipCode} {city}
         </p>
         {bio ? (
           <p className="mt-4 max-w-2xl text-sm leading-relaxed text-foreground/90">

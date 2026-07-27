@@ -1,19 +1,21 @@
 "use server";
 
-import { auth } from "@clerk/nextjs/server";
+import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
-import { BookingStatus, Role } from "@/generated/prisma/client";
+import { BookingStatus } from "@/generated/prisma/client";
 import type { ActionResult } from "@/lib/action-result";
 import {
   bookingStatusesBlockingAvailability,
   computeAvailableSlots,
   type AvailableSlot,
 } from "@/lib/availability-slots";
+import { overlapsExistingBooking } from "@/lib/booking-overlap";
 import {
   getParisWeekdayFromDateString,
   parisDateStringToBounds,
 } from "@/lib/paris-time";
+import { requireClientUserId } from "@/lib/require-client";
 import { prisma } from "@/lib/prisma";
 
 const parisDateSchema = z
@@ -34,6 +36,8 @@ export type EducatorPublicProfile = {
   id: string;
   educatorName: string;
   city: string;
+  zipCode: string;
+  address: string;
   bio: string | null;
   services: EducatorPublicService[];
 };
@@ -61,33 +65,6 @@ const createBookingSchema = z.object({
   slotStartUtcIso: z.string().min(1),
 });
 
-async function requireClientUserId(): Promise<
-  ActionResult<{ userId: string }>
-> {
-  const { userId: clerkId } = await auth();
-  if (!clerkId) {
-    return { success: false, error: "Vous devez être connecté." };
-  }
-
-  const user = await prisma.user.findUnique({
-    where: { clerkId },
-    select: { id: true, role: true },
-  });
-
-  if (!user) {
-    return { success: false, error: "Compte introuvable. Terminez l’inscription." };
-  }
-
-  if (user.role !== Role.CLIENT) {
-    return {
-      success: false,
-      error: "Seuls les comptes propriétaires peuvent réserver une séance.",
-    };
-  }
-
-  return { success: true, data: { userId: user.id } };
-}
-
 export async function getEducatorPublicProfile(
   educatorProfileId: unknown,
 ): Promise<ActionResult<EducatorPublicProfile>> {
@@ -102,6 +79,8 @@ export async function getEducatorPublicProfile(
       select: {
         id: true,
         city: true,
+        zipCode: true,
+        address: true,
         bio: true,
         user: { select: { name: true } },
         services: {
@@ -128,6 +107,8 @@ export async function getEducatorPublicProfile(
         id: profile.id,
         educatorName: profile.user.name,
         city: profile.city,
+        zipCode: profile.zipCode,
+        address: profile.address,
         bio: profile.bio,
         services: profile.services.map((service) => ({
           id: service.id,
@@ -248,6 +229,7 @@ export async function createDog(
       },
       select: { id: true, name: true, breed: true },
     });
+    revalidatePath("/account/chiens");
     return { success: true, data: dog };
   } catch {
     return { success: false, error: "Erreur serveur." };
@@ -298,41 +280,84 @@ export async function createBooking(
       day: "2-digit",
     }).format(slotStart);
 
-    const slotsResult = await getAvailableSlots({
-      educatorProfileId,
-      serviceId,
-      dateParis,
-    });
-
-    if (!slotsResult.success) {
-      return { success: false, error: slotsResult.error };
-    }
-
-    const stillAvailable = slotsResult.data.some(
-      (slot) => slot.startUtcIso === slotStart.toISOString(),
-    );
-
-    if (!stillAvailable) {
-      return {
-        success: false,
-        error: "Ce créneau n’est plus disponible. Choisissez un autre horaire.",
-      };
-    }
-
-    const booking = await prisma.booking.create({
-      data: {
-        userId: client.data.userId,
-        dogId,
-        serviceId,
+    const booking = await prisma.$transaction(async (tx) => {
+      const slotsResult = await getAvailableSlots({
         educatorProfileId,
-        dateTime: slotStart,
-        status: BookingStatus.PENDING,
-      },
-      select: { id: true },
+        serviceId,
+        dateParis,
+      });
+
+      if (!slotsResult.success) {
+        throw new Error(slotsResult.error);
+      }
+
+      const stillAvailable = slotsResult.data.some(
+        (slot) => slot.startUtcIso === slotStart.toISOString(),
+      );
+
+      if (!stillAvailable) {
+        throw new Error(
+          "SLOT_UNAVAILABLE:Ce créneau n’est plus disponible. Choisissez un autre horaire.",
+        );
+      }
+
+      const { startUtc, endUtc } = parisDateStringToBounds(dateParis);
+      const blocking = await tx.booking.findMany({
+        where: {
+          educatorProfileId,
+          status: { in: bookingStatusesBlockingAvailability() },
+          dateTime: { gte: startUtc, lte: endUtc },
+        },
+        include: { service: { select: { durationMinutes: true } } },
+      });
+
+      if (
+        overlapsExistingBooking(
+          slotStart,
+          service.durationMinutes,
+          blocking,
+        )
+      ) {
+        throw new Error(
+          "SLOT_UNAVAILABLE:Ce créneau vient d’être réservé. Choisissez un autre horaire.",
+        );
+      }
+
+      return tx.booking.create({
+        data: {
+          userId: client.data.userId,
+          dogId,
+          serviceId,
+          educatorProfileId,
+          dateTime: slotStart,
+          status: BookingStatus.PENDING,
+        },
+        select: { id: true },
+      });
     });
+
+    revalidatePath("/dashboard/chiens");
+    revalidatePath("/dashboard", "layout");
+    revalidatePath("/dashboard/agenda");
+    revalidatePath("/dashboard/seances");
+    revalidatePath("/account");
 
     return { success: true, bookingId: booking.id };
-  } catch {
+  } catch (error) {
+    if (error instanceof Error) {
+      if (error.message.startsWith("SLOT_UNAVAILABLE:")) {
+        return {
+          success: false,
+          error: error.message.slice("SLOT_UNAVAILABLE:".length),
+        };
+      }
+      if (
+        error.message !== "Erreur serveur." &&
+        !error.message.includes("Prisma")
+      ) {
+        return { success: false, error: error.message };
+      }
+    }
     return { success: false, error: "Erreur serveur." };
   }
 }

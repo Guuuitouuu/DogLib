@@ -151,3 +151,122 @@ export function toParisDateString(date: Date): string {
     day: "2-digit",
   }).format(date);
 }
+
+const PARIS_WEEKDAY_SHORT = ["dim.", "lun.", "mar.", "mer.", "jeu.", "ven.", "sam."] as const;
+
+export function addParisDays(dateStr: string, delta: number): string {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  return toParisDateString(parisWallTimeToUtc(y, m, d + delta, 12, 0, 0, 0));
+}
+
+/** Lundi → dimanche (semaine civil Paris), avec décalage de semaines. */
+export function getParisWeekBoundsUtc(
+  reference = new Date(),
+  weekOffset = 0,
+): {
+  startUtc: Date;
+  endUtc: Date;
+  weekStartDateStr: string;
+  days: {
+    dateStr: string;
+    dayOfMonth: number;
+    weekdayShort: string;
+    weekdayIndex: number;
+  }[];
+} {
+  const anchor = new Date(reference.getTime() + weekOffset * 7 * 86_400_000);
+  const anchorStr = toParisDateString(anchor);
+  const weekday = getParisWeekdayFromDateString(anchorStr);
+  const daysFromMonday = (weekday + 6) % 7;
+
+  let mondayStr = anchorStr;
+  for (let i = 0; i < daysFromMonday; i++) {
+    mondayStr = addParisDays(mondayStr, -1);
+  }
+
+  const days: {
+    dateStr: string;
+    dayOfMonth: number;
+    weekdayShort: string;
+    weekdayIndex: number;
+  }[] = [];
+
+  for (let i = 0; i < 7; i++) {
+    const dateStr = addParisDays(mondayStr, i);
+    const dayOfMonth = Number(dateStr.split("-")[2]);
+    const w = getParisWeekdayFromDateString(dateStr);
+    days.push({
+      dateStr,
+      dayOfMonth,
+      weekdayShort: PARIS_WEEKDAY_SHORT[w] ?? "",
+      weekdayIndex: w,
+    });
+  }
+
+  const lastDay = days[6]!;
+  const { startUtc } = parisDateStringToBounds(mondayStr);
+  const { endUtc } = parisDateStringToBounds(lastDay.dateStr);
+
+  return {
+    startUtc,
+    endUtc,
+    weekStartDateStr: mondayStr,
+    days,
+  };
+}
+
+export function formatParisWeekRangeLabel(
+  weekStartDateStr: string,
+  weekEndDateStr: string,
+): string {
+  const [sy, sm, sd] = weekStartDateStr.split("-").map(Number);
+  const [ey, em, ed] = weekEndDateStr.split("-").map(Number);
+  const start = new Date(Date.UTC(sy, sm - 1, sd));
+  const end = new Date(Date.UTC(ey, em - 1, ed));
+  const fmt = new Intl.DateTimeFormat("fr-FR", {
+    day: "numeric",
+    month: "short",
+    year: sy !== ey ? "numeric" : undefined,
+  });
+  const startLabel = fmt.format(start);
+  const endLabel = new Intl.DateTimeFormat("fr-FR", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  }).format(end);
+  return `${startLabel} — ${endLabel}`;
+}
+
+/** Mois civil Paris complet (1er → dernier jour). */
+export function getParisMonthBoundsUtc(reference = new Date()): {
+  startUtc: Date;
+  endUtc: Date;
+} {
+  const { year, month } = getParisYmd(reference);
+  const lastDayUtc = parisWallTimeToUtc(year, month + 1, 0, 23, 59, 59, 999);
+  return {
+    startUtc: parisWallTimeToUtc(year, month, 1, 0, 0, 0, 0),
+    endUtc: lastDayUtc,
+  };
+}
+
+export function getParisDayBoundsFromDateStr(dateStr: string): {
+  startUtc: Date;
+  endUtc: Date;
+} {
+  return parisDateStringToBounds(dateStr);
+}
+
+export const defaultAgendaHours = [
+  "08:00",
+  "09:00",
+  "10:00",
+  "11:00",
+  "12:00",
+  "13:00",
+  "14:00",
+  "15:00",
+  "16:00",
+  "17:00",
+  "18:00",
+] as const;

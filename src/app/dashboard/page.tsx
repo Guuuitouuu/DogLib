@@ -24,7 +24,7 @@ export default async function DashboardPage() {
 
   return (
     <>
-      <Topbar />
+      <Topbar eyebrow="Bonjour 👋" title="Voici votre journée" />
       <main className="flex-1 space-y-6 px-5 py-6 md:px-8">
         {loadError ? (
           <p

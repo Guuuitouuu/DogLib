@@ -1,7 +1,10 @@
 import { EducatorServicesPanel } from "@/components/dashboard/educator-services-panel";
 import { Topbar } from "@/components/dashboard/topbar";
+import { listEducatorServices } from "@/actions/educator-services";
 
-export default function DashboardServicesPage() {
+export default async function DashboardServicesPage() {
+  const listResult = await listEducatorServices();
+
   return (
     <>
       <Topbar
@@ -11,7 +14,12 @@ export default function DashboardServicesPage() {
         actionShortLabel="Service"
       />
       <main className="flex-1 px-5 py-6 md:px-8">
-        <EducatorServicesPanel />
+        <EducatorServicesPanel
+          initialServices={listResult.success ? listResult.data : []}
+          initialListError={
+            listResult.success ? null : listResult.error
+          }
+        />
       </main>
     </>
   );

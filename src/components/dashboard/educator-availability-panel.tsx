@@ -1,7 +1,8 @@
 "use client";
 
 import { Loader2, Pencil, Plus, Trash2 } from "lucide-react";
-import { useCallback, useEffect, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useState } from "react";
 
 import {
   createEducatorAvailability,
@@ -53,25 +54,26 @@ const emptyForm: FormState = {
 };
 
 export function EducatorAvailabilityPanel() {
+  const router = useRouter();
   const [rows, setRows] = useState<EducatorAvailabilityItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<EducatorAvailabilityItem | null>(null);
   const [form, setForm] = useState<FormState>(emptyForm);
-  const [pending, startTransition] = useTransition();
 
-  const load = useCallback(async () => {
-    setLoading(true);
+  const refreshList = useCallback(async (options?: { silent?: boolean }) => {
+    if (!options?.silent) setLoading(true);
     const result = await listEducatorAvailabilities();
-    setLoading(false);
+    if (!options?.silent) setLoading(false);
     if (!result.success) {
       setError(result.error);
-      setRows([]);
-      return;
+      return false;
     }
     setError(null);
     setRows(result.data);
+    return true;
   }, []);
 
   useEffect(() => {
@@ -79,12 +81,20 @@ export function EducatorAvailabilityPanel() {
     void (async () => {
       await Promise.resolve();
       if (cancelled) return;
-      await load();
+      await refreshList();
     })();
     return () => {
       cancelled = true;
     };
-  }, [load]);
+  }, [refreshList]);
+
+  function handleDialogOpenChange(open: boolean) {
+    setDialogOpen(open);
+    if (!open) {
+      setEditing(null);
+      setForm(emptyForm);
+    }
+  }
 
   function openCreate() {
     setEditing(null);
@@ -103,60 +113,74 @@ export function EducatorAvailabilityPanel() {
     setDialogOpen(true);
   }
 
-  function submitForm(e: React.FormEvent) {
+  async function submitForm(e: React.FormEvent) {
     e.preventDefault();
-    startTransition(async () => {
-      setError(null);
-      const payload = {
-        dayOfWeek: Number.parseInt(form.dayOfWeek, 10),
-        startTime: form.startTime,
-        endTime: form.endTime,
-        isActive: form.isActive,
-      };
+    setSubmitting(true);
+    setError(null);
+    const payload = {
+      dayOfWeek: Number.parseInt(form.dayOfWeek, 10),
+      startTime: form.startTime,
+      endTime: form.endTime,
+      isActive: form.isActive,
+    };
 
-      const result = editing
-        ? await updateEducatorAvailability({
-            availabilityId: editing.id,
-            ...payload,
-          })
-        : await createEducatorAvailability(payload);
+    const result = editing
+      ? await updateEducatorAvailability({
+          availabilityId: editing.id,
+          ...payload,
+        })
+      : await createEducatorAvailability(payload);
 
-      if (!result.success) {
-        setError(result.error);
-        return;
-      }
+    setSubmitting(false);
 
-      setDialogOpen(false);
-      await load();
-    });
+    if (!result.success) {
+      setError(result.error);
+      return;
+    }
+
+    handleDialogOpenChange(false);
+    setRows((prev) =>
+      editing
+        ? prev.map((r) => (r.id === result.data.id ? result.data : r))
+        : [...prev, result.data].sort(
+            (a, b) =>
+              a.dayOfWeek - b.dayOfWeek || a.startTime.localeCompare(b.startTime),
+          ),
+    );
+    router.refresh();
+    void refreshList({ silent: true });
   }
 
-  function toggleActive(row: EducatorAvailabilityItem) {
-    startTransition(async () => {
-      const result = await updateEducatorAvailability({
-        availabilityId: row.id,
-        isActive: !row.isActive,
-      });
-      if (!result.success) {
-        setError(result.error);
-        return;
-      }
-      await load();
+  async function toggleActive(row: EducatorAvailabilityItem) {
+    setSubmitting(true);
+    const result = await updateEducatorAvailability({
+      availabilityId: row.id,
+      isActive: !row.isActive,
     });
+    setSubmitting(false);
+    if (!result.success) {
+      setError(result.error);
+      return;
+    }
+    setRows((prev) =>
+      prev.map((r) => (r.id === result.data.id ? result.data : r)),
+    );
+    router.refresh();
   }
 
-  function remove(row: EducatorAvailabilityItem) {
+  async function remove(row: EducatorAvailabilityItem) {
     if (!window.confirm("Supprimer cette plage horaire ?")) return;
-    startTransition(async () => {
-      const result = await deleteEducatorAvailability({
-        availabilityId: row.id,
-      });
-      if (!result.success) {
-        setError(result.error);
-        return;
-      }
-      await load();
+    setSubmitting(true);
+    const result = await deleteEducatorAvailability({
+      availabilityId: row.id,
     });
+    setSubmitting(false);
+    if (!result.success) {
+      setError(result.error);
+      return;
+    }
+    setRows((prev) => prev.filter((r) => r.id !== row.id));
+    router.refresh();
   }
 
   return (
@@ -218,7 +242,7 @@ export function EducatorAvailabilityPanel() {
                       variant="outline"
                       size="sm"
                       onClick={() => toggleActive(row)}
-                      disabled={pending}
+                      disabled={submitting}
                     >
                       {row.isActive ? "Désactiver" : "Activer"}
                     </Button>
@@ -236,7 +260,7 @@ export function EducatorAvailabilityPanel() {
                       variant="ghost"
                       size="sm"
                       onClick={() => remove(row)}
-                      disabled={pending}
+                      disabled={submitting}
                     >
                       <Trash2 className="size-4" aria-hidden />
                     </Button>
@@ -248,14 +272,14 @@ export function EducatorAvailabilityPanel() {
         </ul>
       )}
 
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+      <Dialog open={dialogOpen} onOpenChange={handleDialogOpenChange}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>
               {editing ? "Modifier la plage" : "Nouvelle plage horaire"}
             </DialogTitle>
           </DialogHeader>
-          <form onSubmit={submitForm} className="space-y-4">
+          <form onSubmit={(e) => void submitForm(e)} className="space-y-4">
             <div className="space-y-1.5">
               <Label>Jour</Label>
               <Select
@@ -314,8 +338,8 @@ export function EducatorAvailabilityPanel() {
               Plage active (créneaux réservables)
             </label>
             <DialogFooter>
-              <Button type="submit" disabled={pending}>
-                {pending ? (
+              <Button type="submit" disabled={submitting}>
+                {submitting ? (
                   <Loader2 className="size-4 animate-spin" />
                 ) : editing ? (
                   "Enregistrer"

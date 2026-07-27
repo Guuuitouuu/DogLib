@@ -1,6 +1,18 @@
 import { Search, Bell, Plus, PawPrint } from "lucide-react"
 
-export function Topbar() {
+type TopbarProps = {
+  title: string
+  eyebrow?: string
+  actionLabel?: string
+  actionShortLabel?: string
+}
+
+export function Topbar({
+  title,
+  eyebrow = "Bonjour 👋",
+  actionLabel = "Nouvelle séance",
+  actionShortLabel = "Séance",
+}: TopbarProps) {
   return (
     <header className="sticky top-0 z-10 flex flex-col gap-4 border-b border-border bg-background/85 px-5 py-4 backdrop-blur md:flex-row md:items-center md:justify-between md:px-8">
       <div className="flex items-center gap-3">
@@ -8,9 +20,9 @@ export function Topbar() {
           <PawPrint className="size-4" />
         </span>
         <div>
-          <p className="text-sm text-muted-foreground">Bonjour Julie 👋</p>
+          <p className="text-sm text-muted-foreground">{eyebrow}</p>
           <h1 className="text-xl font-bold tracking-tight text-foreground text-balance">
-            Voici votre journée
+            {title}
           </h1>
         </div>
       </div>
@@ -27,6 +39,7 @@ export function Topbar() {
         </div>
 
         <button
+          type="button"
           aria-label="Notifications"
           className="relative flex size-11 items-center justify-center rounded-xl border border-border bg-card text-muted-foreground shadow-sm transition-colors hover:text-foreground"
         >
@@ -34,13 +47,17 @@ export function Topbar() {
           <span className="absolute right-2.5 top-2.5 size-2 rounded-full bg-primary ring-2 ring-card" />
         </button>
 
-        <button className="flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-opacity hover:opacity-90">
+        <button
+          type="button"
+          className="flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-opacity hover:opacity-90"
+        >
           <Plus className="size-4" />
-          <span className="hidden sm:inline">Nouvelle séance</span>
-          <span className="sm:hidden">Séance</span>
+          <span className="hidden sm:inline">{actionLabel}</span>
+          <span className="sm:hidden">{actionShortLabel}</span>
         </button>
 
         <button
+          type="button"
           aria-label="Mon profil"
           className="flex size-11 items-center justify-center rounded-xl bg-accent text-sm font-bold text-accent-foreground shadow-sm"
         >

@@ -1,8 +1,10 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import type { ActionResult } from "@/lib/action-result";
+import { prismaErrorMessage } from "@/lib/prisma-errors";
 import { requireEducatorProfile } from "@/lib/require-educator";
 import { prisma } from "@/lib/prisma";
 
@@ -16,11 +18,16 @@ export type EducatorServiceItem = {
 };
 
 const serviceBodySchema = z.object({
-  title: z.string().min(1).max(120),
-  description: z.string().max(5000).optional(),
+  title: z.string().trim().min(1, "Le titre est obligatoire.").max(120),
+  description: z
+    .string()
+    .max(5000)
+    .optional()
+    .nullable()
+    .transform((value) => value?.trim() || undefined),
   durationMinutes: z.coerce.number().int().min(15).max(480),
   priceCents: z.coerce.number().int().min(0).max(1_000_000),
-  isActive: z.boolean().optional(),
+  isActive: z.coerce.boolean().optional(),
 });
 
 const serviceIdSchema = z.object({
@@ -42,16 +49,25 @@ function mapService(row: {
   description: string | null;
   durationMinutes: number;
   price: number;
-  isActive: boolean;
+  isActive?: boolean;
 }): EducatorServiceItem {
   return {
     id: row.id,
     title: row.title,
     description: row.description,
     durationMinutes: row.durationMinutes,
-    priceCents: row.price,
-    isActive: row.isActive,
+    priceCents: Number(row.price),
+    isActive: row.isActive ?? true,
   };
+}
+
+function formatZodServiceError(error: z.ZodError): string {
+  return error.issues[0]?.message ?? "Informations du service invalides.";
+}
+
+function revalidateServicePages(educatorProfileId: string) {
+  revalidatePath("/dashboard/services");
+  revalidatePath(`/educator/${educatorProfileId}`);
 }
 
 export async function listEducatorServices(): Promise<
@@ -66,8 +82,13 @@ export async function listEducatorServices(): Promise<
       orderBy: [{ isActive: "desc" }, { title: "asc" }],
     });
     return { success: true, data: rows.map(mapService) };
-  } catch {
-    return { success: false, error: "Impossible de charger les services." };
+  } catch (error) {
+    return {
+      success: false,
+      error:
+        prismaErrorMessage(error) ??
+        "Impossible de charger les services.",
+    };
   }
 }
 
@@ -79,23 +100,41 @@ export async function createEducatorService(
 
   const parsed = serviceBodySchema.safeParse(input);
   if (!parsed.success) {
-    return { success: false, error: "Informations du service invalides." };
+    return { success: false, error: formatZodServiceError(parsed.error) };
   }
 
   try {
+    const profile = await prisma.educatorProfile.findUnique({
+      where: { id: educator.data.educatorProfileId },
+      select: { id: true },
+    });
+    if (!profile) {
+      return {
+        success: false,
+        error:
+          "Profil éducateur introuvable. Déconnectez-vous puis reconnectez-vous.",
+      };
+    }
+
     const row = await prisma.service.create({
       data: {
-        educatorProfileId: educator.data.educatorProfileId,
-        title: parsed.data.title.trim(),
-        description: parsed.data.description?.trim() || null,
+        educatorProfileId: profile.id,
+        title: parsed.data.title,
+        description: parsed.data.description ?? null,
         durationMinutes: parsed.data.durationMinutes,
         price: parsed.data.priceCents,
         isActive: parsed.data.isActive ?? true,
       },
     });
+    revalidateServicePages(profile.id);
     return { success: true, data: mapService(row) };
-  } catch {
-    return { success: false, error: "Impossible de créer le service." };
+  } catch (error) {
+    console.error("[createEducatorService]", error);
+    return {
+      success: false,
+      error:
+        prismaErrorMessage(error) ?? "Impossible de créer le service.",
+    };
   }
 }
 
@@ -140,9 +179,15 @@ export async function updateEducatorService(
         ...(fields.isActive !== undefined ? { isActive: fields.isActive } : {}),
       },
     });
+    revalidateServicePages(educator.data.educatorProfileId);
     return { success: true, data: mapService(row) };
-  } catch {
-    return { success: false, error: "Impossible de mettre à jour le service." };
+  } catch (error) {
+    console.error("[updateEducatorService]", error);
+    return {
+      success: false,
+      error:
+        prismaErrorMessage(error) ?? "Impossible de mettre à jour le service.",
+    };
   }
 }
 
@@ -177,6 +222,7 @@ export async function deleteEducatorService(
     }
 
     await prisma.service.delete({ where: { id: existing.id } });
+    revalidateServicePages(educator.data.educatorProfileId);
     return { success: true, data: { id: existing.id } };
   } catch {
     return { success: false, error: "Impossible de supprimer le service." };

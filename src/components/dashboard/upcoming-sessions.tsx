@@ -1,23 +1,13 @@
+import Link from "next/link";
 import { ChevronRight, MapPin } from "lucide-react";
 
 import type { TodayBookingItem } from "@/actions/educator";
-import { BookingStatus } from "@/generated/prisma/client";
+import {
+  bookingStatusBadgeStyles,
+  bookingStatusLabels,
+} from "@/lib/booking-ui";
 import { formatParisDayLabel } from "@/lib/paris-time";
 import { cn } from "@/lib/utils";
-
-const statusLabels: Record<BookingStatus, string> = {
-  [BookingStatus.CONFIRMED]: "Confirmée",
-  [BookingStatus.PENDING]: "En attente",
-  [BookingStatus.CANCELLED]: "Annulée",
-  [BookingStatus.COMPLETED]: "Terminée",
-};
-
-const statusStyles: Record<BookingStatus, string> = {
-  [BookingStatus.CONFIRMED]: "bg-accent text-accent-foreground",
-  [BookingStatus.PENDING]: "bg-chart-3/20 text-chart-4",
-  [BookingStatus.CANCELLED]: "bg-muted text-muted-foreground",
-  [BookingStatus.COMPLETED]: "bg-primary/12 text-primary",
-};
 
 type UpcomingSessionsProps = {
   bookings: TodayBookingItem[];
@@ -35,13 +25,13 @@ export function UpcomingSessions({ bookings }: UpcomingSessionsProps) {
           </h2>
           <p className="text-sm text-muted-foreground capitalize">{dayLabel}</p>
         </div>
-        <button
-          type="button"
+        <Link
+          href="/dashboard/agenda"
           className="flex items-center gap-1 text-sm font-semibold text-primary transition-opacity hover:opacity-80"
         >
           Agenda
           <ChevronRight className="size-4" />
-        </button>
+        </Link>
       </div>
 
       {bookings.length === 0 ? (
@@ -71,10 +61,10 @@ export function UpcomingSessions({ bookings }: UpcomingSessionsProps) {
                   <span
                     className={cn(
                       "shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold",
-                      statusStyles[s.status],
+                      bookingStatusBadgeStyles[s.status],
                     )}
                   >
-                    {statusLabels[s.status]}
+                    {bookingStatusLabels[s.status]}
                   </span>
                 </div>
                 <p className="truncate text-sm text-foreground">{s.serviceTitle}</p>
