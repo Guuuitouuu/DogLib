@@ -12,6 +12,7 @@ export function SignInForm({ redirectUrl }: Props) {
   return (
     <main className="flex flex-1 items-center justify-center px-4 py-16">
       <SignIn
+        routing="hash"
         signUpUrl={
           redirectUrl
             ? `/sign-up?redirect_url=${encodeURIComponent(redirectUrl)}`
