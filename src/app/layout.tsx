@@ -14,10 +14,35 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const siteUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://doglib.fr";
+
 export const metadata: Metadata = {
-  title: "DogLib — Espace éducateur canin",
+  metadataBase: new URL(siteUrl),
+  title: {
+    default: "DogLib — Éducateurs canins & propriétaires",
+    template: "%s · DogLib",
+  },
   description:
-    "Tableau de bord pour éducateurs canins : clients, chiens, séances, agenda et revenus.",
+    "Marketplace et tableau de bord pour éducateurs canins : réservations, clients, chiens, agenda et revenus.",
+  applicationName: "DogLib",
+  openGraph: {
+    type: "website",
+    locale: "fr_FR",
+    siteName: "DogLib",
+    title: "DogLib — Éducateurs canins & propriétaires",
+    description:
+      "Trouvez un éducateur canin près de chez vous, ou gérez votre activité éducateur.",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "DogLib",
+    description:
+      "Marketplace et espace pro pour éducateurs canins et propriétaires.",
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
   icons: {
     icon: [
       {

@@ -9,9 +9,9 @@ type TopbarProps = {
 
 export function Topbar({
   title,
-  eyebrow = "Bonjour 👋",
-  actionLabel = "Nouvelle séance",
-  actionShortLabel = "Séance",
+  eyebrow = "Bonjour",
+  actionLabel,
+  actionShortLabel,
 }: TopbarProps) {
   return (
     <header className="sticky top-0 z-10 flex flex-col gap-4 border-b border-border bg-background/85 px-5 py-4 backdrop-blur md:flex-row md:items-center md:justify-between md:px-8">
@@ -47,22 +47,16 @@ export function Topbar({
           <span className="absolute right-2.5 top-2.5 size-2 rounded-full bg-primary ring-2 ring-card" />
         </button>
 
-        <button
-          type="button"
-          className="flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-opacity hover:opacity-90"
-        >
-          <Plus className="size-4" />
-          <span className="hidden sm:inline">{actionLabel}</span>
-          <span className="sm:hidden">{actionShortLabel}</span>
-        </button>
-
-        <button
-          type="button"
-          aria-label="Mon profil"
-          className="flex size-11 items-center justify-center rounded-xl bg-accent text-sm font-bold text-accent-foreground shadow-sm"
-        >
-          JM
-        </button>
+        {actionLabel ? (
+          <button
+            type="button"
+            className="flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-opacity hover:opacity-90"
+          >
+            <Plus className="size-4" />
+            <span className="hidden sm:inline">{actionLabel}</span>
+            <span className="sm:hidden">{actionShortLabel ?? actionLabel}</span>
+          </button>
+        ) : null}
       </div>
     </header>
   )

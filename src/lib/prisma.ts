@@ -29,11 +29,16 @@ function createPool() {
     connectionString.includes("supabase.co") ||
     connectionString.includes("sslmode=require");
 
+  // Sur Vercel / serverless : peu de connexions par instance.
+  const isProd = process.env.NODE_ENV === "production";
+  const max = Number(process.env.DB_POOL_MAX ?? (isProd ? 3 : 10));
+
   return new Pool({
     connectionString,
-    max: 10,
+    max: Number.isFinite(max) && max > 0 ? max : isProd ? 3 : 10,
     connectionTimeoutMillis: 10_000,
-    idleTimeoutMillis: 30_000,
+    idleTimeoutMillis: isProd ? 10_000 : 30_000,
+    allowExitOnIdle: isProd,
     ...(useSsl
       ? { ssl: { rejectUnauthorized: false } }
       : {}),

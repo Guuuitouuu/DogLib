@@ -1,9 +1,15 @@
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 
-import { clients } from "@/lib/data";
+import type { EducatorClientItem } from "@/types/educator-client";
 
-export function ClientsList() {
+type ClientsListProps = {
+  clients: EducatorClientItem[];
+};
+
+export function ClientsList({ clients }: ClientsListProps) {
+  const visible = clients.slice(0, 5);
+
   return (
     <section className="rounded-2xl border border-border bg-card p-6 shadow-sm">
       <div className="flex items-center justify-between">
@@ -12,7 +18,7 @@ export function ClientsList() {
             Suivi des élèves
           </h2>
           <p className="text-sm text-muted-foreground">
-            Progression des programmes en cours
+            Chiens suivis via vos réservations
           </p>
         </div>
         <Link
@@ -24,55 +30,61 @@ export function ClientsList() {
         </Link>
       </div>
 
-      <ul className="mt-5 flex flex-col divide-y divide-border">
-        {clients.slice(0, 5).map((c) => (
-          <li
-            key={c.id}
-            className="flex items-center gap-4 py-3.5 first:pt-0 last:pb-0"
-          >
-            <img
-              src={c.photo || "/placeholder.svg"}
-              alt={`Photo de ${c.dogName}`}
-              className="size-12 shrink-0 rounded-full object-cover"
-            />
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-semibold text-foreground">
-                {c.dogName}{" "}
-                <span className="font-normal text-muted-foreground">
-                  · {c.breed}
+      {visible.length === 0 ? (
+        <p className="mt-5 text-sm text-muted-foreground">
+          Aucun client pour le moment. Les réservations apparaîtront ici.
+        </p>
+      ) : (
+        <ul className="mt-5 flex flex-col divide-y divide-border">
+          {visible.map((c) => (
+            <li key={c.id}>
+              <Link
+                href={c.nextSessionHref ?? `/dashboard/chiens/${c.dogId}`}
+                className="flex items-center gap-4 py-3.5 transition-colors hover:bg-secondary/30 first:pt-0 last:pb-0"
+              >
+                <span className="flex size-12 shrink-0 items-center justify-center rounded-full bg-primary/12 text-sm font-bold text-primary">
+                  {c.dogName.slice(0, 1).toUpperCase()}
                 </span>
-              </p>
-              <p className="truncate text-xs text-muted-foreground">
-                {c.ownerName} — {c.program}
-              </p>
-            </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-semibold text-foreground">
+                    {c.dogName}{" "}
+                    <span className="font-normal text-muted-foreground">
+                      · {c.breed ?? "Race non renseignée"}
+                    </span>
+                  </p>
+                  <p className="truncate text-xs text-muted-foreground">
+                    {c.ownerName} — {c.program}
+                  </p>
+                </div>
 
-            <div className="hidden w-36 shrink-0 sm:block">
-              <div className="mb-1 flex items-center justify-between">
-                <span className="text-xs font-medium text-muted-foreground">
-                  Progression
-                </span>
-                <span className="text-xs font-semibold text-foreground">
-                  {c.progress}%
-                </span>
-              </div>
-              <div className="h-2 w-full overflow-hidden rounded-full bg-secondary">
-                <div
-                  className="h-full rounded-full bg-chart-2"
-                  style={{ width: `${c.progress}%` }}
-                />
-              </div>
-            </div>
+                <div className="hidden w-36 shrink-0 sm:block">
+                  <div className="mb-1 flex items-center justify-between">
+                    <span className="text-xs font-medium text-muted-foreground">
+                      Progression
+                    </span>
+                    <span className="text-xs font-semibold text-foreground">
+                      {c.progress}%
+                    </span>
+                  </div>
+                  <div className="h-2 w-full overflow-hidden rounded-full bg-secondary">
+                    <div
+                      className="h-full rounded-full bg-chart-2"
+                      style={{ width: `${c.progress}%` }}
+                    />
+                  </div>
+                </div>
 
-            <div className="hidden w-24 shrink-0 text-right md:block">
-              <p className="text-xs text-muted-foreground">Prochaine</p>
-              <p className="text-sm font-semibold text-foreground">
-                {c.nextSession}
-              </p>
-            </div>
-          </li>
-        ))}
-      </ul>
+                <div className="hidden w-28 shrink-0 text-right md:block">
+                  <p className="text-xs text-muted-foreground">Prochaine</p>
+                  <p className="text-sm font-semibold text-foreground">
+                    {c.nextSessionLabel}
+                  </p>
+                </div>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
     </section>
   );
 }

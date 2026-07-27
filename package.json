@@ -6,9 +6,11 @@
     "dev": "next dev",
     "dev:stable": "next dev --webpack --no-server-fast-refresh",
     "dev:clean": "node scripts/clean-next-dev.mjs",
-    "build": "next build",
+    "postinstall": "prisma generate",
+    "build": "prisma generate && next build",
     "start": "next start",
-    "lint": "eslint",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
     "db:push": "prisma db push",
     "db:studio": "prisma studio",
     "check:db": "npx tsx scripts/check-db.ts"
