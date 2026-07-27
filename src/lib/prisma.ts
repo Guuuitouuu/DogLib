@@ -1,3 +1,5 @@
+import dns from "node:dns";
+
 import { PrismaClient } from "@/generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { Pool } from "pg";
@@ -24,6 +26,9 @@ function createPool() {
   if (!connectionString) {
     throw new Error("DATABASE_URL is not set");
   }
+
+  // Évite ENETUNREACH quand Supabase résout en IPv6 et le réseau local ne route pas l’IPv6.
+  dns.setDefaultResultOrder("ipv4first");
 
   const useSsl =
     connectionString.includes("supabase.co") ||

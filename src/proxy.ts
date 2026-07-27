@@ -7,7 +7,6 @@ const isProtectedRoute = createRouteMatcher([
   "/dashboard(.*)",
   "/account(.*)",
   "/onboarding(.*)",
-  "/auth/continue(.*)",
 ]);
 
 type ProxyArgs = [NextRequest, ...unknown[]];
