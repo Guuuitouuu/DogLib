@@ -1,4 +1,7 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
+import { NextResponse, type NextRequest } from "next/server";
+
+import { isClerkConfigured } from "@/lib/clerk-config";
 
 const isProtectedRoute = createRouteMatcher([
   "/dashboard(.*)",
@@ -7,11 +10,29 @@ const isProtectedRoute = createRouteMatcher([
   "/auth/continue(.*)",
 ]);
 
-export default clerkMiddleware(async (auth, req) => {
-  if (isProtectedRoute(req)) {
-    await auth.protect();
+type ProxyArgs = [NextRequest, ...unknown[]];
+
+let cachedClerkHandler:
+  | ((...args: ProxyArgs) => Response | Promise<Response>)
+  | null = null;
+
+function getClerkHandler() {
+  if (!cachedClerkHandler) {
+    cachedClerkHandler = clerkMiddleware(async (auth, req) => {
+      if (isProtectedRoute(req)) {
+        await auth.protect();
+      }
+    }) as (...args: ProxyArgs) => Response | Promise<Response>;
   }
-});
+  return cachedClerkHandler;
+}
+
+export default function proxy(...args: ProxyArgs) {
+  if (!isClerkConfigured()) {
+    return NextResponse.next();
+  }
+  return getClerkHandler()(...args);
+}
 
 export const config = {
   matcher: [

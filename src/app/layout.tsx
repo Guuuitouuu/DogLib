@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { ClerkProvider } from "@clerk/nextjs";
 import { Geist_Mono, Inter } from "next/font/google";
 
+import { isClerkConfigured } from "@/lib/clerk-config";
 import "./globals.css";
 
 const inter = Inter({
@@ -69,16 +70,20 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  return (
-    <ClerkProvider>
-      <html
-        lang="fr"
-        className={`light ${inter.variable} ${geistMono.variable} h-full bg-background`}
-      >
-        <body className="flex min-h-full flex-col font-sans antialiased">
-          {children}
-        </body>
-      </html>
-    </ClerkProvider>
+  const content = (
+    <html
+      lang="fr"
+      className={`light ${inter.variable} ${geistMono.variable} h-full bg-background`}
+    >
+      <body className="flex min-h-full flex-col font-sans antialiased">
+        {children}
+      </body>
+    </html>
   );
+
+  if (!isClerkConfigured()) {
+    return content;
+  }
+
+  return <ClerkProvider>{content}</ClerkProvider>;
 }
