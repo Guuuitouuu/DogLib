@@ -18,6 +18,10 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   poweredByHeader: false,
   compress: true,
+  serverExternalPackages: ["@prisma/client", "pg", "@prisma/adapter-pg"],
+  outputFileTracingIncludes: {
+    "/*": ["./src/generated/prisma/**/*"],
+  },
   images: {
     remotePatterns: [
       {
