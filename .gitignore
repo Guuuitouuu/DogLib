@@ -51,6 +51,3 @@ next-env.d.ts
 /compodog/
 *.zip
 /package/
-
-.vercel
-.env*

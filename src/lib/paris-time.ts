@@ -250,6 +250,70 @@ export function getParisMonthBoundsUtc(reference = new Date()): {
   };
 }
 
+/**
+ * Les `count` derniers mois civils Paris (du plus ancien au plus récent),
+ * bornes UTC inclusives + libellés.
+ */
+export function getParisLastMonthsBoundsUtc(
+  count: number,
+  reference = new Date(),
+): {
+  key: string;
+  monthLabel: string;
+  startUtc: Date;
+  endUtc: Date;
+}[] {
+  const { year, month } = getParisYmd(reference);
+  const months: {
+    key: string;
+    monthLabel: string;
+    startUtc: Date;
+    endUtc: Date;
+  }[] = [];
+
+  for (let i = count - 1; i >= 0; i--) {
+    const anchor = parisWallTimeToUtc(year, month - i, 15, 12, 0, 0, 0);
+    const bounds = getParisMonthBoundsUtc(anchor);
+    const ymd = getParisYmd(anchor);
+    const key = `${ymd.year}-${String(ymd.month).padStart(2, "0")}`;
+    const monthLabel = new Intl.DateTimeFormat("fr-FR", {
+      timeZone: PARIS,
+      month: "short",
+    }).format(anchor);
+    months.push({
+      key,
+      monthLabel: monthLabel.replace(/\.$/, ""),
+      startUtc: bounds.startUtc,
+      endUtc: bounds.endUtc,
+    });
+  }
+
+  return months;
+}
+
+export function formatParisDateShort(date: Date): string {
+  return new Intl.DateTimeFormat("fr-FR", {
+    timeZone: PARIS,
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  }).format(date);
+}
+
+export function formatParisRelativeSessionLabel(date: Date, now = new Date()): string {
+  const dateStr = toParisDateString(date);
+  const todayStr = toParisDateString(now);
+  const time = formatTimeParis(date);
+  if (dateStr === todayStr) {
+    return `Auj. ${time}`;
+  }
+  const tomorrowStr = addParisDays(todayStr, 1);
+  if (dateStr === tomorrowStr) {
+    return `Dem. ${time}`;
+  }
+  return `${formatParisDateShort(date)} · ${time}`;
+}
+
 export function getParisDayBoundsFromDateStr(dateStr: string): {
   startUtc: Date;
   endUtc: Date;

@@ -1,3 +1,5 @@
+import dns from "node:dns";
+
 import { PrismaClient } from "@/generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { Pool } from "pg";
@@ -25,15 +27,23 @@ function createPool() {
     throw new Error("DATABASE_URL is not set");
   }
 
+  // Évite ENETUNREACH quand Supabase résout en IPv6 et le réseau local ne route pas l’IPv6.
+  dns.setDefaultResultOrder("ipv4first");
+
   const useSsl =
     connectionString.includes("supabase.co") ||
     connectionString.includes("sslmode=require");
 
+  // Sur Vercel / serverless : peu de connexions par instance.
+  const isProd = process.env.NODE_ENV === "production";
+  const max = Number(process.env.DB_POOL_MAX ?? (isProd ? 3 : 10));
+
   return new Pool({
     connectionString,
-    max: 10,
+    max: Number.isFinite(max) && max > 0 ? max : isProd ? 3 : 10,
     connectionTimeoutMillis: 10_000,
-    idleTimeoutMillis: 30_000,
+    idleTimeoutMillis: isProd ? 10_000 : 30_000,
+    allowExitOnIdle: isProd,
     ...(useSsl
       ? { ssl: { rejectUnauthorized: false } }
       : {}),
