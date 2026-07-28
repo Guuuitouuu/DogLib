@@ -6,8 +6,8 @@ export type EducatorDogListItem = {
   breed: string | null;
   age: number | null;
   ownerName: string;
-  sessionsCount: number;
-  lastSessionDateParis: string | null;
+  reservationsCount: number;
+  lastReservationDateParis: string | null;
   reportsCount: number;
 };
 
@@ -20,10 +20,10 @@ export type EducatorDogDetail = {
   medicalNotes: string | null;
   ownerName: string;
   ownerEmail: string;
-  sessions: EducatorDogSessionItem[];
+  reservations: EducatorDogReservationItem[];
 };
 
-export type EducatorDogSessionItem = {
+export type EducatorDogReservationItem = {
   bookingId: string;
   dateParis: string;
   timeParis: string;

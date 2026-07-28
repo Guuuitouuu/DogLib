@@ -20,19 +20,19 @@ type StatCardsProps = {
 };
 
 export function StatCards({ stats }: StatCardsProps) {
-  const completed = stats?.completedSessionsCount ?? 0;
+  const completed = stats?.completedReservationsCount ?? 0;
   const dogs = stats?.distinctDogsCount ?? 0;
   const revenue = stats ? euroFormatter.format(stats.revenueCents / 100) : "—";
   const successRate =
     stats && stats.totalBookingsInPeriod > 0
       ? Math.round(
-          (stats.completedSessionsCount / stats.totalBookingsInPeriod) * 100,
+          (stats.completedReservationsCount / stats.totalBookingsInPeriod) * 100,
         )
       : null;
 
   const cards = [
     {
-      label: "Séances terminées",
+      label: "Réservations terminées",
       value: stats ? String(completed) : "—",
       delta: stats ? `${completed}` : "—",
       hint: "depuis le 1er du mois (Paris)",
@@ -51,7 +51,7 @@ export function StatCards({ stats }: StatCardsProps) {
       label: "Revenus du mois",
       value: revenue,
       delta: stats ? revenue : "—",
-      hint: "séances terminées uniquement",
+      hint: "réservations terminées uniquement",
       icon: Wallet,
       tone: "primary" as const,
     },
@@ -59,7 +59,7 @@ export function StatCards({ stats }: StatCardsProps) {
       label: "Taux de complétion",
       value: successRate !== null ? `${successRate} %` : "—",
       delta: successRate !== null ? `${successRate} %` : "—",
-      hint: "terminées / séances du mois",
+      hint: "terminées / réservations du mois",
       icon: TrendingUp,
       tone: "accent" as const,
     },

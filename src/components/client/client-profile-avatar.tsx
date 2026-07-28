@@ -82,7 +82,7 @@ export function ClientProfileAvatar({
       <div className="min-w-0 space-y-2">
         <p className="text-sm font-medium text-foreground">Photo de profil</p>
         <p className="break-words text-xs text-muted-foreground">
-          Visible par les éducateurs lorsque vous réservez une séance.
+          Visible par les éducateurs lorsque vous réservez une réservation.
         </p>
         <div className="flex flex-wrap gap-2">
           <input

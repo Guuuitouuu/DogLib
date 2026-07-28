@@ -17,7 +17,7 @@ export type EducatorBookingItem = {
 };
 
 export type EducatorBookingSummary = {
-  sessionsThisMonth: number;
+  reservationsThisMonth: number;
   hoursThisMonth: number;
   revenueCentsThisMonth: number;
   completedThisMonth: number;

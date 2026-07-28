@@ -1,45 +1,5 @@
-import {
-  getEducatorBookingSummary,
-  listEducatorBookings,
-} from "@/actions/educator-bookings";
-import { SessionsList } from "@/components/dashboard/sessions-list";
-import { Topbar } from "@/components/dashboard/topbar";
-import { getParisMonthBoundsUtc } from "@/lib/paris-time";
+import { redirect } from "next/navigation";
 
-export default async function DashboardSeancesPage() {
-  const { startUtc, endUtc } = getParisMonthBoundsUtc();
-  const [listResult, summaryResult] = await Promise.all([
-    listEducatorBookings({
-      startUtcIso: startUtc.toISOString(),
-      endUtcIso: endUtc.toISOString(),
-      status: "all",
-    }),
-    getEducatorBookingSummary(),
-  ]);
-
-  const loadError =
-    (!listResult.success && listResult.error) ||
-    (!summaryResult.success && summaryResult.error);
-
-  return (
-    <>
-      <Topbar
-        eyebrow="Historique & suivi"
-        title="Vos séances"
-        actionLabel="Agenda"
-        actionShortLabel="Agenda"
-      />
-      <main className="flex-1 px-5 py-6 md:px-8">
-        {loadError ? (
-          <p className="mb-4 text-sm text-destructive" role="alert">
-            {loadError}
-          </p>
-        ) : null}
-        <SessionsList
-          bookings={listResult.success ? listResult.data : []}
-          summary={summaryResult.success ? summaryResult.data : null}
-        />
-      </main>
-    </>
-  );
+export default function DashboardReservationsLegacyRedirectPage() {
+  redirect("/dashboard/reservations");
 }

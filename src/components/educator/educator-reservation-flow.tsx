@@ -377,7 +377,7 @@ export function EducatorReservationFlow({
           <CardContent className="space-y-4">
             {dogs.length > 0 && !showAddDog ? (
               <div className="space-y-2">
-                <Label htmlFor="dog-select">Chien pour cette séance</Label>
+                <Label htmlFor="dog-select">Chien pour cette réservation</Label>
                 <select
                   id="dog-select"
                   value={selectedDogId}

@@ -136,7 +136,7 @@ export const tasks: Task[] = [
   {
     id: "t1",
     label: "Envoyer le compte-rendu de Gaston",
-    detail: "Séance du 22 juillet",
+    detail: "Réservation du 22 juillet",
     done: false,
     tag: "compte-rendu",
   },
@@ -391,7 +391,7 @@ export const agendaEvents: AgendaEvent[] = [
 export const agendaHours = ["09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00"]
 
 /* ------------------------------------------------------------------ */
-/* Séances (historique + à venir)                                      */
+/* Réservations (historique + à venir)                                      */
 /* ------------------------------------------------------------------ */
 
 export type SessionRecord = {

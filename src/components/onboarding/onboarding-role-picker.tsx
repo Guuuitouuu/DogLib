@@ -58,7 +58,7 @@ export function OnboardingRolePicker() {
               Je suis éducateur canin
             </span>
             <span className="mt-1 block text-sm text-muted-foreground">
-              Gérez vos séances, disponibilités et clients depuis le tableau de
+              Gérez vos réservations, disponibilités et clients depuis le tableau de
               bord.
             </span>
           </span>
@@ -81,7 +81,7 @@ export function OnboardingRolePicker() {
               Je cherche un éducateur
             </span>
             <span className="mt-1 block text-sm text-muted-foreground">
-              Réservez des séances pour votre chien auprès d&apos;éducateurs
+              Réservez des créneaux pour votre chien auprès d&apos;éducateurs
               près de chez vous.
             </span>
           </span>

@@ -9,13 +9,15 @@ const globalForPrisma = globalThis as unknown as {
   prismaSchemaRevision: string | undefined;
 };
 
-const PRISMA_SCHEMA_REVISION = "2026-07-user-address";
+const PRISMA_SCHEMA_REVISION = "2026-07-educator-profile-appearance-v2";
 
 if (
   process.env.NODE_ENV !== "production" &&
   globalForPrisma.prismaSchemaRevision !== PRISMA_SCHEMA_REVISION
 ) {
+  void globalForPrisma.pool?.end().catch(() => undefined);
   globalForPrisma.prisma = undefined;
+  globalForPrisma.pool = undefined;
   globalForPrisma.prismaSchemaRevision = PRISMA_SCHEMA_REVISION;
 }
 

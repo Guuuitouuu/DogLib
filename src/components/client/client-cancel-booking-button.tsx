@@ -70,7 +70,7 @@ export function ClientCancelBookingButton({
           <DialogHeader className="min-w-0">
             <DialogTitle>Annuler ce rendez-vous ?</DialogTitle>
             <DialogDescription className="break-words">
-              Séance pour <strong>{dogName}</strong>. Cette action est
+              Réservation pour <strong>{dogName}</strong>. Cette action est
               définitive ; l&apos;éducateur sera informé dans son agenda.
             </DialogDescription>
           </DialogHeader>

@@ -37,7 +37,7 @@ type ClientBookingsPanelProps = {
 const actionButtonClass =
   "h-auto min-h-9 w-full min-w-0 whitespace-normal py-2 text-center leading-snug sm:w-auto";
 
-function formatSessionDate(dateParis: string): string {
+function formatReservationDate(dateParis: string): string {
   const [y, m, d] = dateParis.split("-").map(Number);
   const utc = new Date(Date.UTC(y, m - 1, d, 12, 0, 0));
   return new Intl.DateTimeFormat("fr-FR", {
@@ -93,7 +93,7 @@ function BookingCard({
 
       <ul className="min-w-0 space-y-1.5 text-xs text-muted-foreground">
         <li className="min-w-0 break-words font-medium capitalize text-foreground">
-          {formatSessionDate(booking.dateParis)}
+          {formatReservationDate(booking.dateParis)}
         </li>
         <li className="flex min-w-0 items-start gap-2">
           <Clock className="mt-0.5 size-3.5 shrink-0" aria-hidden />
@@ -152,9 +152,9 @@ function BookingCard({
                 <Dialog open={reportOpen} onOpenChange={setReportOpen}>
                   <DialogContent className="max-h-[85vh] max-w-[calc(100vw-2rem)] overflow-y-auto sm:max-w-lg">
                     <DialogHeader className="min-w-0">
-                      <DialogTitle>Compte-rendu de séance</DialogTitle>
+                      <DialogTitle>Compte-rendu de réservation</DialogTitle>
                       <DialogDescription className="break-words">
-                        {formatSessionDate(booking.dateParis)} ·{" "}
+                        {formatReservationDate(booking.dateParis)} ·{" "}
                         {booking.serviceTitle} · {booking.educatorName}
                       </DialogDescription>
                     </DialogHeader>
@@ -194,7 +194,7 @@ export function ClientBookingsPanel({
     <div className="min-w-0 space-y-8">
       <Card className="min-w-0">
         <CardHeader>
-          <CardTitle className="text-lg">Rendez-vous à venir</CardTitle>
+          <CardTitle className="text-lg">Réservations à venir</CardTitle>
           <CardDescription className="break-words">
             Statut, éducateur, chien, horaire et lieu de rendez-vous.
           </CardDescription>
@@ -220,13 +220,13 @@ export function ClientBookingsPanel({
         <CardHeader>
           <CardTitle className="text-lg">Historique</CardTitle>
           <CardDescription className="break-words">
-            Séances passées et comptes-rendus laissés par vos éducateurs.
+            Réservations passées et comptes-rendus laissés par vos éducateurs.
           </CardDescription>
         </CardHeader>
         <CardContent className="min-w-0 space-y-3">
           {past.length === 0 ? (
             <p className="text-sm text-muted-foreground">
-              Votre historique apparaîtra ici après vos premières séances.
+              Votre historique apparaîtra ici après vos premières réservations.
             </p>
           ) : (
             past.map((b) => (

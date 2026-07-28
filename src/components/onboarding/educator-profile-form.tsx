@@ -50,7 +50,7 @@ export function EducatorProfileForm() {
         <CardTitle>Votre profil éducateur</CardTitle>
         <CardDescription>
           Ces informations apparaîtront sur votre page publique et serviront
-          pour vos séances. Vous pourrez les modifier plus tard.
+          pour vos réservations. Vous pourrez les modifier plus tard.
         </CardDescription>
       </CardHeader>
       <CardContent>

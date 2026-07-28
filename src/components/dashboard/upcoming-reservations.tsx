@@ -9,11 +9,11 @@ import {
 import { formatParisDayLabel } from "@/lib/paris-time";
 import { cn } from "@/lib/utils";
 
-type UpcomingSessionsProps = {
+type UpcomingReservationsProps = {
   bookings: TodayBookingItem[];
 };
 
-export function UpcomingSessions({ bookings }: UpcomingSessionsProps) {
+export function UpcomingReservations({ bookings }: UpcomingReservationsProps) {
   const dayLabel = formatParisDayLabel();
 
   return (
@@ -21,7 +21,7 @@ export function UpcomingSessions({ bookings }: UpcomingSessionsProps) {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-lg font-bold tracking-tight text-foreground">
-            Séances du jour
+            Réservations du jour
           </h2>
           <p className="text-sm text-muted-foreground capitalize">{dayLabel}</p>
         </div>
@@ -36,7 +36,7 @@ export function UpcomingSessions({ bookings }: UpcomingSessionsProps) {
 
       {bookings.length === 0 ? (
         <p className="mt-5 text-sm text-muted-foreground">
-          Aucune séance prévue aujourd&apos;hui.
+          Aucune réservation prévue aujourd&apos;hui.
         </p>
       ) : (
         <ul className="mt-5 flex flex-col gap-3">

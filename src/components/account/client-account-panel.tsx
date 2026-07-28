@@ -49,7 +49,7 @@ export function ClientAccountPanel({ initialDogs }: ClientAccountPanelProps) {
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Mon compte</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Gérez vos chiens pour réserver des séances chez un éducateur.
+          Gérez vos chiens pour réserver des réservations chez un éducateur.
         </p>
       </div>
 
@@ -61,7 +61,7 @@ export function ClientAccountPanel({ initialDogs }: ClientAccountPanelProps) {
               Mes chiens
             </CardTitle>
             <CardDescription>
-              Ajoutez au moins un chien avant de réserver une séance.
+              Ajoutez au moins un chien avant de réserver une réservation.
             </CardDescription>
           </div>
           {!showForm && dogs.length > 0 ? (

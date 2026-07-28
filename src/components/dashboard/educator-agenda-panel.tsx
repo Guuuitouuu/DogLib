@@ -26,6 +26,7 @@ import {
   formatParisWeekRangeLabel,
   toParisDateString,
 } from "@/lib/paris-time";
+import { EDUCATOR_DASHBOARD_POLL_MS } from "@/lib/educator-dashboard-poll";
 import { cn } from "@/lib/utils";
 
 const weekDayHeaders = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"] as const;
@@ -114,7 +115,7 @@ export function EducatorAgendaPanel({
   }, [initialWeekBookings, initialDayBookings]);
 
   const reloadWeek = useCallback(
-    (offset: number, filter: BookingStatusFilter) => {
+    (offset: number, filter: BookingStatusFilter, options?: { refreshPage?: boolean }) => {
       startTransition(async () => {
         setError(null);
         const result = await listEducatorBookingsForWeek(offset, filter);
@@ -127,14 +128,16 @@ export function EducatorAgendaPanel({
           days: result.data.week.days,
         });
         setWeekBookings(withoutCancelled(result.data.bookings));
-        router.refresh();
+        if (options?.refreshPage !== false) {
+          router.refresh();
+        }
       });
     },
     [router],
   );
 
   const reloadDay = useCallback(
-    (date: string, filter: BookingStatusFilter) => {
+    (date: string, filter: BookingStatusFilter, options?: { refreshPage?: boolean }) => {
       startTransition(async () => {
         setError(null);
         const result = await listEducatorBookingsForDay(date, filter);
@@ -143,11 +146,30 @@ export function EducatorAgendaPanel({
           return;
         }
         setDayBookings(withoutCancelled(result.data));
-        router.refresh();
+        if (options?.refreshPage !== false) {
+          router.refresh();
+        }
       });
     },
     [router],
   );
+
+  const silentRefresh = useCallback(() => {
+    if (view === "week") {
+      reloadWeek(weekOffset, statusFilter, { refreshPage: false });
+    } else {
+      reloadDay(dayParis, statusFilter, { refreshPage: false });
+    }
+  }, [view, weekOffset, statusFilter, dayParis, reloadWeek, reloadDay]);
+
+  useEffect(() => {
+    const id = window.setInterval(() => {
+      if (document.visibilityState === "visible") {
+        silentRefresh();
+      }
+    }, EDUCATOR_DASHBOARD_POLL_MS);
+    return () => window.clearInterval(id);
+  }, [silentRefresh]);
 
   function onFilterChange(filter: BookingStatusFilter) {
     setStatusFilter(filter);
@@ -396,7 +418,7 @@ export function EducatorAgendaPanel({
 
           {visibleDayBookings.length === 0 ? (
             <p className="rounded-2xl border border-border bg-card p-6 text-sm text-muted-foreground shadow-sm">
-              Aucune séance pour ce jour avec ce filtre.
+              Aucune réservation pour ce jour avec ce filtre.
             </p>
           ) : (
             <ul className="space-y-3">

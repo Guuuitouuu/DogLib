@@ -1,5 +1,3 @@
-"use client";
-
 import Link from "next/link";
 import { ChevronRight, FileText, PawPrint, User } from "lucide-react";
 
@@ -30,7 +28,7 @@ export function ChiensGrid({ dogs }: ChiensGridProps) {
           Aucun chien pour le moment
         </p>
         <p className="mt-1 text-sm text-muted-foreground">
-          Les chiens apparaissent ici dès qu&apos;un client réserve une séance
+          Les chiens apparaissent ici dès qu&apos;un client réserve une réservation
           avec vous.
         </p>
       </div>
@@ -66,7 +64,7 @@ export function ChiensGrid({ dogs }: ChiensGridProps) {
             </span>
             <span className="flex items-center gap-1.5 rounded-full bg-secondary px-2.5 py-1 font-medium text-secondary-foreground">
               <PawPrint className="size-3.5" aria-hidden />
-              {dog.sessionsCount} séance{dog.sessionsCount !== 1 ? "s" : ""}
+              {dog.reservationsCount} réservation{dog.reservationsCount !== 1 ? "s" : ""}
             </span>
             {dog.reportsCount > 0 ? (
               <span className="flex items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-1 font-medium text-primary">
@@ -76,9 +74,9 @@ export function ChiensGrid({ dogs }: ChiensGridProps) {
             ) : null}
           </div>
 
-          {dog.lastSessionDateParis ? (
+          {dog.lastReservationDateParis ? (
             <p className="mt-3 text-xs text-muted-foreground">
-              Dernière séance : {formatShortDate(dog.lastSessionDateParis)}
+              Dernière réservation : {formatShortDate(dog.lastReservationDateParis)}
             </p>
           ) : null}
 

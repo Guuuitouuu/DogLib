@@ -69,7 +69,7 @@ export async function getEducatorBookingById(
     });
 
     if (!row) {
-      return { success: false, error: "Séance introuvable." };
+      return { success: false, error: "Réservation introuvable." };
     }
 
     return { success: true, data: mapBooking(row, location) };
@@ -78,7 +78,7 @@ export async function getEducatorBookingById(
     return {
       success: false,
       error:
-        prismaErrorMessage(error) ?? "Impossible de charger la séance.",
+        prismaErrorMessage(error) ?? "Impossible de charger la réservation.",
     };
   }
 }
@@ -216,7 +216,7 @@ export async function getEducatorBookingSummary(): Promise<
     return {
       success: true,
       data: {
-        sessionsThisMonth: bookings.length,
+        reservationsThisMonth: bookings.length,
         hoursThisMonth: Math.round(minutes / 60),
         revenueCentsThisMonth: revenueCents,
         completedThisMonth: completed.length,
@@ -225,7 +225,7 @@ export async function getEducatorBookingSummary(): Promise<
   } catch {
     return {
       success: false,
-      error: "Impossible de charger le résumé des séances.",
+      error: "Impossible de charger le résumé des réservations.",
     };
   }
 }
@@ -255,7 +255,8 @@ function revalidateBookingViews() {
   revalidatePath("/dashboard", "layout");
   revalidatePath("/dashboard");
   revalidatePath("/dashboard/agenda");
-  revalidatePath("/dashboard/seances");
+  revalidatePath("/dashboard/reservations");
+  revalidatePath("/dashboard/clients");
 }
 
 export async function getPendingEducatorBookingsCount(): Promise<
@@ -275,7 +276,7 @@ export async function getPendingEducatorBookingsCount(): Promise<
   } catch {
     return {
       success: false,
-      error: "Impossible de compter les séances en attente.",
+      error: "Impossible de compter les réservations en attente.",
     };
   }
 }

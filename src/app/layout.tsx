@@ -17,7 +17,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "DogLib — Espace éducateur canin",
   description:
-    "Tableau de bord pour éducateurs canins : clients, chiens, séances, agenda et revenus.",
+    "Tableau de bord pour éducateurs canins : clients, chiens, réservations, agenda et revenus.",
   icons: {
     icon: [
       {

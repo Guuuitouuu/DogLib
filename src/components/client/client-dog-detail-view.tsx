@@ -16,29 +16,11 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  bookingStatusBadgeStyles,
-  bookingStatusLabels,
-} from "@/lib/booking-ui";
-import type { BookingStatusValue } from "@/lib/booking-status";
-import { cn } from "@/lib/utils";
 import type { ClientDogDetail } from "@/types/client-dashboard";
 
 type ClientDogDetailViewProps = {
   dog: ClientDogDetail;
 };
-
-function formatDateLong(dateParis: string): string {
-  const [y, m, d] = dateParis.split("-").map(Number);
-  const utc = new Date(Date.UTC(y, m - 1, d, 12, 0, 0));
-  return new Intl.DateTimeFormat("fr-FR", {
-    timeZone: "Europe/Paris",
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  }).format(utc);
-}
 
 export function ClientDogDetailView({ dog }: ClientDogDetailViewProps) {
   const router = useRouter();
@@ -71,7 +53,7 @@ export function ClientDogDetailView({ dog }: ClientDogDetailViewProps) {
     });
   }
 
-  const sessionsWithReport = dog.sessions.filter(
+  const reservationsWithReport = dog.reservations.filter(
     (s) => s.postSessionReport && s.postSessionReport.trim().length > 0,
   );
 
@@ -88,11 +70,11 @@ export function ClientDogDetailView({ dog }: ClientDogDetailViewProps) {
         <CardHeader>
           <CardTitle>{dog.name}</CardTitle>
           <CardDescription className="break-words">
-            {dog.sessionsCount} séance{dog.sessionsCount !== 1 ? "s" : ""} ·{" "}
-            {dog.completedSessionsCount} terminée
-            {dog.completedSessionsCount !== 1 ? "s" : ""} ·{" "}
-            {sessionsWithReport.length} compte-rendu
-            {sessionsWithReport.length !== 1 ? "s" : ""}
+            {dog.reservationsCount} réservation{dog.reservationsCount !== 1 ? "s" : ""} ·{" "}
+            {dog.completedReservationsCount} terminée
+            {dog.completedReservationsCount !== 1 ? "s" : ""} ·{" "}
+            {reservationsWithReport.length} compte-rendu
+            {reservationsWithReport.length !== 1 ? "s" : ""}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -170,66 +152,27 @@ export function ClientDogDetailView({ dog }: ClientDogDetailViewProps) {
 
       <Card>
         <CardHeader>
-          <CardTitle>Historique des séances</CardTitle>
+          <CardTitle>Réservations & comptes-rendus</CardTitle>
           <CardDescription className="break-words">
-            Comptes-rendus partagés par vos éducateurs après chaque séance.
+            {dog.reservationsCount} réservation
+            {dog.reservationsCount !== 1 ? "s" : ""} ·{" "}
+            {reservationsWithReport.length} compte-rendu
+            {reservationsWithReport.length !== 1 ? "s" : ""}
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          {dog.sessions.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              Aucune séance pour le moment.
-            </p>
-          ) : (
-            dog.sessions.map((session) => {
-              const status = session.status as BookingStatusValue;
-              return (
-                <article
-                  key={session.bookingId}
-                  className="min-w-0 rounded-xl border border-border p-4"
-                >
-                  <div className="flex min-w-0 flex-wrap items-start justify-between gap-2">
-                    <div className="min-w-0 flex-1">
-                      <p className="break-words font-semibold capitalize text-foreground">
-                        {formatDateLong(session.dateParis)}
-                      </p>
-                      <p className="break-words text-sm text-muted-foreground">
-                        {session.timeParis} · {session.serviceTitle} ·{" "}
-                        {session.educatorName}
-                      </p>
-                    </div>
-                    <span
-                      className={cn(
-                        "rounded-full px-2.5 py-0.5 text-xs font-semibold",
-                        bookingStatusBadgeStyles[status],
-                      )}
-                    >
-                      {bookingStatusLabels[status]}
-                    </span>
-                  </div>
-                  {session.postSessionReport?.trim() ? (
-                    <p className="mt-3 min-w-0 break-words whitespace-pre-wrap text-sm text-foreground">
-                      {session.postSessionReport}
-                    </p>
-                  ) : (
-                    <p className="mt-3 text-sm italic text-muted-foreground">
-                      Compte-rendu pas encore disponible.
-                    </p>
-                  )}
-                  <Link
-                    href={`/educator/${session.educatorProfileId}`}
-                    className={buttonVariants({
-                      variant: "link",
-                      size: "sm",
-                      className: "mt-2 h-auto px-0",
-                    })}
-                  >
-                    Voir l&apos;éducateur
-                  </Link>
-                </article>
-              );
-            })
-          )}
+        <CardContent className="flex flex-col gap-3 sm:flex-row">
+          <Link
+            href="/account/reservations"
+            className={buttonVariants({ variant: "outline", className: "flex-1" })}
+          >
+            Mes réservations
+          </Link>
+          <Link
+            href={`/account/chiens/${dog.id}/comptes-rendus`}
+            className={buttonVariants({ className: "flex-1" })}
+          >
+            Voir les comptes-rendus
+          </Link>
         </CardContent>
       </Card>
     </div>

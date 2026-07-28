@@ -57,7 +57,7 @@ async function main() {
     service = await prisma.service.create({
       data: {
         educatorProfileId: educator.id,
-        title: "Séance découverte",
+        title: "Réservation découverte",
         durationMinutes: 60,
         price: 5500,
         isActive: true,

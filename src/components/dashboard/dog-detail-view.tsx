@@ -22,7 +22,7 @@ type DogDetailViewProps = {
   dog: EducatorDogDetail;
 };
 
-function formatSessionDateLong(dateParis: string): string {
+function formatReservationDateLong(dateParis: string): string {
   const [y, m, d] = dateParis.split("-").map(Number);
   const utc = new Date(Date.UTC(y, m - 1, d, 12, 0, 0));
   return new Intl.DateTimeFormat("fr-FR", {
@@ -35,7 +35,7 @@ function formatSessionDateLong(dateParis: string): string {
 }
 
 export function DogDetailView({ dog }: DogDetailViewProps) {
-  const sessionsWithReport = dog.sessions.filter(
+  const reservationsWithReport = dog.reservations.filter(
     (s) => s.postSessionReport && s.postSessionReport.trim().length > 0,
   );
 
@@ -107,39 +107,44 @@ export function DogDetailView({ dog }: DogDetailViewProps) {
             Historique des comptes-rendus
           </CardTitle>
           <CardDescription>
-            {sessionsWithReport.length > 0
-              ? `${sessionsWithReport.length} compte-rendu${sessionsWithReport.length !== 1 ? "s" : ""} enregistré${sessionsWithReport.length !== 1 ? "s" : ""}.`
-              : "Aucun compte-rendu pour l’instant — rédigez-les depuis la fiche séance."}
+            {reservationsWithReport.length > 0
+              ? `${reservationsWithReport.length} compte-rendu${reservationsWithReport.length !== 1 ? "s" : ""} enregistré${reservationsWithReport.length !== 1 ? "s" : ""}.`
+              : "Aucun compte-rendu pour l’instant — rédigez-les depuis la fiche réservation."}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {dog.sessions.map((session) => (
+          {dog.reservations.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              Aucune réservation enregistrée pour ce chien.
+            </p>
+          ) : (
+            dog.reservations.map((reservation) => (
             <article
-              key={session.bookingId}
+              key={reservation.bookingId}
               className="rounded-xl border border-border p-4"
             >
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div>
                   <p className="font-semibold capitalize text-foreground">
-                    {formatSessionDateLong(session.dateParis)}
+                    {formatReservationDateLong(reservation.dateParis)}
                   </p>
                   <p className="text-sm text-muted-foreground">
-                    {session.timeParis} · {session.serviceTitle}
+                    {reservation.timeParis} · {reservation.serviceTitle}
                   </p>
                 </div>
                 <span
                   className={cn(
                     "rounded-full px-2.5 py-0.5 text-xs font-semibold",
-                    bookingStatusBadgeStyles[session.status],
+                    bookingStatusBadgeStyles[reservation.status],
                   )}
                 >
-                  {bookingStatusLabels[session.status]}
+                  {bookingStatusLabels[reservation.status]}
                 </span>
               </div>
 
-              {session.postSessionReport?.trim() ? (
+              {reservation.postSessionReport?.trim() ? (
                 <p className="mt-3 whitespace-pre-wrap text-sm text-foreground">
-                  {session.postSessionReport}
+                  {reservation.postSessionReport}
                 </p>
               ) : (
                 <p className="mt-3 text-sm italic text-muted-foreground">
@@ -148,17 +153,18 @@ export function DogDetailView({ dog }: DogDetailViewProps) {
               )}
 
               <Link
-                href={`/dashboard/seances/${session.bookingId}`}
+                href={`/dashboard/reservations/${reservation.bookingId}`}
                 className={buttonVariants({
                   variant: "link",
                   size: "sm",
                   className: "mt-2 h-auto px-0",
                 })}
               >
-                Ouvrir la séance
+                Ouvrir la réservation
               </Link>
             </article>
-          ))}
+            ))
+          )}
         </CardContent>
       </Card>
     </div>

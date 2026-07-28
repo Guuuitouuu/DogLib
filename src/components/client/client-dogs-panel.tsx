@@ -54,7 +54,8 @@ export function ClientDogsPanel({ initialDogs }: ClientDogsPanelProps) {
         name: result.data.name,
         breed: result.data.breed,
         age: null,
-        sessionsCount: 0,
+        photoUrl: null,
+        reservationsCount: 0,
         reportsCount: 0,
       };
       setDogs((prev) => [...prev, newDog].sort((a, b) => a.name.localeCompare(b.name, "fr")));
@@ -71,7 +72,7 @@ export function ClientDogsPanel({ initialDogs }: ClientDogsPanelProps) {
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Mes chiens</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Fiches, séances et comptes-rendus par chien.
+            Fiches, réservations et comptes-rendus par chien.
           </p>
         </div>
         {!showForm ? (
@@ -144,7 +145,7 @@ export function ClientDogsPanel({ initialDogs }: ClientDogsPanelProps) {
       {dogs.length === 0 && !showForm ? (
         <Card>
           <CardContent className="py-10 text-center text-sm text-muted-foreground">
-            Aucun chien enregistré. Ajoutez-en un pour réserver une séance.
+            Aucun chien enregistré. Ajoutez-en un pour réserver une réservation.
           </CardContent>
         </Card>
       ) : (
@@ -163,7 +164,7 @@ export function ClientDogsPanel({ initialDogs }: ClientDogsPanelProps) {
               </CardHeader>
               <CardContent className="space-y-3 text-sm text-muted-foreground">
                 <p>
-                  {dog.sessionsCount} séance{dog.sessionsCount !== 1 ? "s" : ""} ·{" "}
+                  {dog.reservationsCount} réservation{dog.reservationsCount !== 1 ? "s" : ""} ·{" "}
                   {dog.reportsCount} compte-rendu
                   {dog.reportsCount !== 1 ? "s" : ""}
                 </p>
@@ -176,6 +177,17 @@ export function ClientDogsPanel({ initialDogs }: ClientDogsPanelProps) {
                   })}
                 >
                   Voir la fiche
+                  <ChevronRight className="size-4" aria-hidden />
+                </Link>
+                <Link
+                  href={`/account/chiens/${dog.id}/comptes-rendus`}
+                  className={buttonVariants({
+                    variant: "secondary",
+                    size: "sm",
+                    className: "w-full justify-between",
+                  })}
+                >
+                  Voir les comptes-rendus
                   <ChevronRight className="size-4" aria-hidden />
                 </Link>
               </CardContent>

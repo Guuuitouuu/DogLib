@@ -1,20 +1,49 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import Image from "next/image"
-import { Search, Mail, MoreHorizontal } from "lucide-react"
-import { clients } from "@/lib/data"
+import { useMemo, useState } from "react";
+import Link from "next/link";
+import { Search, Mail, Phone } from "lucide-react";
 
-export function ClientsTable() {
-  const [query, setQuery] = useState("")
-  const visible = clients.filter((c) => {
-    const q = query.toLowerCase()
-    return (
-      c.ownerName.toLowerCase().includes(q) ||
-      c.dogName.toLowerCase().includes(q) ||
-      c.breed.toLowerCase().includes(q)
-    )
-  })
+import type { EducatorClientListItem } from "@/types/educator-client";
+
+type ClientsTableProps = {
+  clients: EducatorClientListItem[];
+};
+
+function formatShortParisDate(dateParis: string): string {
+  const [y, m, d] = dateParis.split("-").map(Number);
+  const utc = new Date(Date.UTC(y, m - 1, d, 12, 0, 0));
+  return new Intl.DateTimeFormat("fr-FR", {
+    timeZone: "Europe/Paris",
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  }).format(utc);
+}
+
+function formatNextLabel(client: EducatorClientListItem): string {
+  if (!client.nextBookingDateParis || !client.nextBookingTimeParis) {
+    return "—";
+  }
+  return `${formatShortParisDate(client.nextBookingDateParis)} · ${client.nextBookingTimeParis}`;
+}
+
+export function ClientsTable({ clients }: ClientsTableProps) {
+  const [query, setQuery] = useState("");
+
+  const visible = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return clients;
+    return clients.filter(
+      (c) =>
+        c.ownerName.toLowerCase().includes(q) ||
+        c.dogName.toLowerCase().includes(q) ||
+        (c.breed?.toLowerCase().includes(q) ?? false) ||
+        c.email.toLowerCase().includes(q) ||
+        (c.phone?.includes(q) ?? false) ||
+        (c.lastServiceTitle?.toLowerCase().includes(q) ?? false),
+    );
+  }, [clients, query]);
 
   return (
     <div className="space-y-5">
@@ -31,81 +60,110 @@ export function ClientsTable() {
       </div>
 
       <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
-        {/* En-tête (desktop) */}
         <div className="hidden grid-cols-12 gap-4 border-b border-border bg-secondary/50 px-5 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground md:grid">
           <span className="col-span-4">Client</span>
-          <span className="col-span-3">Programme</span>
-          <span className="col-span-3">Progression</span>
-          <span className="col-span-2 text-right">Prochaine séance</span>
+          <span className="col-span-2">Contact</span>
+          <span className="col-span-2">Dernier service</span>
+          <span className="col-span-2">Suivi</span>
+          <span className="col-span-2 text-right">Prochaine réservation</span>
         </div>
 
-        <ul className="divide-y divide-border">
-          {visible.map((c) => (
-            <li
-              key={c.id}
-              className="grid grid-cols-1 gap-4 px-5 py-4 transition-colors hover:bg-secondary/40 md:grid-cols-12 md:items-center"
-            >
-              <div className="col-span-4 flex items-center gap-3">
-                <Image
-                  src={c.photo || "/placeholder.svg"}
-                  alt={`Chien de ${c.ownerName}`}
-                  width={44}
-                  height={44}
-                  className="size-11 rounded-xl object-cover"
-                />
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold text-foreground">{c.ownerName}</p>
-                  <p className="truncate text-xs text-muted-foreground">
-                    {c.dogName} · {c.breed}
-                  </p>
-                </div>
-              </div>
-
-              <div className="col-span-3">
-                <span className="inline-flex rounded-full bg-accent px-2.5 py-1 text-xs font-medium text-accent-foreground">
-                  {c.program}
-                </span>
-              </div>
-
-              <div className="col-span-3">
-                <div className="mb-1 flex items-center justify-between text-xs md:justify-start md:gap-2">
-                  <span className="font-semibold text-primary">{c.progress}%</span>
-                </div>
-                <div className="h-2 w-full max-w-[160px] overflow-hidden rounded-full bg-secondary">
-                  <div
-                    className="h-full rounded-full bg-primary"
-                    style={{ width: `${c.progress}%` }}
-                  />
-                </div>
-              </div>
-
-              <div className="col-span-2 flex items-center justify-between gap-2 md:justify-end">
-                <span className="text-sm font-medium text-foreground">{c.nextSession}</span>
-                <div className="flex items-center gap-1">
-                  <button
-                    aria-label={`Écrire à ${c.ownerName}`}
-                    className="flex size-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+        {clients.length === 0 ? (
+          <p className="px-5 py-10 text-center text-sm text-muted-foreground">
+            Aucun client enregistré. Créez une réservation pour qu&apos;un
+            propriétaire apparaisse ici.
+          </p>
+        ) : (
+          <ul className="divide-y divide-border">
+            {visible.map((c) => (
+              <li
+                key={c.id}
+                className="grid grid-cols-1 gap-4 px-5 py-4 transition-colors hover:bg-secondary/40 md:grid-cols-12 md:items-center"
+              >
+                <div className="col-span-4 flex items-center gap-3">
+                  <Link
+                    href={`/dashboard/chiens/${c.dogId}`}
+                    className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-accent text-sm font-bold text-accent-foreground transition-opacity hover:opacity-90"
                   >
-                    <Mail className="size-4" />
-                  </button>
-                  <button
-                    aria-label="Plus d'options"
-                    className="flex size-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
-                  >
-                    <MoreHorizontal className="size-4" />
-                  </button>
+                    {c.dogName.slice(0, 2).toUpperCase()}
+                  </Link>
+                  <div className="min-w-0">
+                    <Link
+                      href={`/dashboard/chiens/${c.dogId}`}
+                      className="truncate text-sm font-semibold text-foreground hover:text-primary"
+                    >
+                      {c.ownerName}
+                    </Link>
+                    <p className="truncate text-xs text-muted-foreground">
+                      {c.dogName} · {c.breed ?? "Race non renseignée"}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {c.reservationsCount} réservation
+                      {c.reservationsCount !== 1 ? "s" : ""}
+                    </p>
+                  </div>
                 </div>
-              </div>
-            </li>
-          ))}
-        </ul>
 
-        {visible.length === 0 && (
+                <div className="col-span-2 space-y-1 text-xs text-muted-foreground">
+                  <a
+                    href={`mailto:${c.email}`}
+                    className="flex items-center gap-1.5 truncate hover:text-foreground"
+                  >
+                    <Mail className="size-3.5 shrink-0" aria-hidden />
+                    {c.email}
+                  </a>
+                  {c.phone ? (
+                    <a
+                      href={`tel:${c.phone.replace(/\s/g, "")}`}
+                      className="flex items-center gap-1.5 hover:text-foreground"
+                    >
+                      <Phone className="size-3.5 shrink-0" aria-hidden />
+                      {c.phone}
+                    </a>
+                  ) : (
+                    <span className="text-muted-foreground/80">—</span>
+                  )}
+                </div>
+
+                <div className="col-span-2">
+                  <span className="inline-flex max-w-full truncate rounded-full bg-accent px-2.5 py-1 text-xs font-medium text-accent-foreground">
+                    {c.lastServiceTitle ?? "—"}
+                  </span>
+                </div>
+
+                <div className="col-span-2">
+                  <div className="mb-1 flex items-center justify-between text-xs md:justify-start md:gap-2">
+                    <span className="font-semibold text-primary">
+                      {c.completionPercent}%
+                    </span>
+                    <span className="text-muted-foreground">
+                      {c.completedReservationsCount}/{c.reservationsCount}
+                    </span>
+                  </div>
+                  <div className="h-2 w-full max-w-[160px] overflow-hidden rounded-full bg-secondary">
+                    <div
+                      className="h-full rounded-full bg-primary"
+                      style={{ width: `${c.completionPercent}%` }}
+                    />
+                  </div>
+                </div>
+
+                <div className="col-span-2 text-right">
+                  <span className="text-sm font-medium text-foreground">
+                    {formatNextLabel(c)}
+                  </span>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+
+        {clients.length > 0 && visible.length === 0 ? (
           <p className="px-5 py-10 text-center text-sm text-muted-foreground">
             Aucun client ne correspond à votre recherche.
           </p>
-        )}
+        ) : null}
       </div>
     </div>
-  )
+  );
 }

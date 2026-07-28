@@ -30,6 +30,7 @@ export default async function DashboardAgendaPage() {
         title="Votre agenda"
         actionLabel="Disponibilités"
         actionShortLabel="Dispo"
+        actionHref="/dashboard/disponibilites"
       />
       <main className="flex-1 px-5 py-6 md:px-8">
         {loadError ? (

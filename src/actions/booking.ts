@@ -1,5 +1,6 @@
 "use server";
 
+import { clerkClient } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
@@ -10,12 +11,19 @@ import {
   computeAvailableSlots,
   type AvailableSlot,
 } from "@/lib/availability-slots";
-import { overlapsExistingBooking } from "@/lib/booking-overlap";
+import {
+  assertEducatorSlotAvailable,
+  slotUnavailableMessage,
+} from "@/lib/booking-slot-guard";
 import {
   getParisWeekdayFromDateString,
   parisDateStringToBounds,
 } from "@/lib/paris-time";
 import { requireClientUserId } from "@/lib/require-client";
+import {
+  notifyEducatorBookingRequest,
+} from "@/lib/educator-notification-create";
+import { prismaErrorMessage } from "@/lib/prisma-errors";
 import { prisma } from "@/lib/prisma";
 
 const parisDateSchema = z
@@ -32,6 +40,13 @@ export type EducatorPublicService = {
   priceCents: number;
 };
 
+export type EducatorPublicDogItem = {
+  id: string;
+  name: string;
+  breed: string | null;
+  photoUrl: string | null;
+};
+
 export type EducatorPublicProfile = {
   id: string;
   educatorName: string;
@@ -39,6 +54,15 @@ export type EducatorPublicProfile = {
   zipCode: string;
   address: string;
   bio: string | null;
+  lat: number;
+  lng: number;
+  bannerUrl: string | null;
+  profilePhotoUrl: string | null;
+  clerkPhotoUrl: string | null;
+  galleryUrls: string[];
+  showLocationMap: boolean;
+  personalDogs: EducatorPublicDogItem[];
+  educatedDogs: EducatorPublicDogItem[];
   services: EducatorPublicService[];
 };
 
@@ -82,7 +106,14 @@ export async function getEducatorPublicProfile(
         zipCode: true,
         address: true,
         bio: true,
-        user: { select: { name: true } },
+        lat: true,
+        lng: true,
+        bannerUrl: true,
+        profilePhotoUrl: true,
+        galleryUrls: true,
+        showLocationMap: true,
+        userId: true,
+        user: { select: { name: true, clerkId: true } },
         services: {
           where: { isActive: true },
           orderBy: { title: "asc" },
@@ -101,6 +132,46 @@ export async function getEducatorPublicProfile(
       return { success: false, error: "Éducateur introuvable." };
     }
 
+    const [clerkPhotoUrl, personalDogs, educatedDogRows] = await Promise.all([
+      (async (): Promise<string | null> => {
+        try {
+          const clerkUser = await (
+            await clerkClient()
+          ).users.getUser(profile.user.clerkId);
+          return clerkUser.hasImage ? clerkUser.imageUrl : null;
+        } catch {
+          return null;
+        }
+      })(),
+      prisma.dog.findMany({
+        where: { userId: profile.userId },
+        orderBy: { name: "asc" },
+        select: { id: true, name: true, breed: true, photoUrl: true },
+      }),
+      prisma.booking.findMany({
+        where: {
+          educatorProfileId: profile.id,
+          status: { not: "CANCELLED" },
+        },
+        select: {
+          dog: {
+            select: { id: true, name: true, breed: true, photoUrl: true },
+          },
+        },
+        orderBy: { updatedAt: "desc" },
+      }),
+    ]);
+
+    const personalDogIds = new Set(personalDogs.map((d) => d.id));
+    const seenEducated = new Set<string>();
+    const educatedDogs: typeof personalDogs = [];
+    for (const row of educatedDogRows) {
+      const dog = row.dog;
+      if (personalDogIds.has(dog.id) || seenEducated.has(dog.id)) continue;
+      seenEducated.add(dog.id);
+      educatedDogs.push(dog);
+    }
+
     return {
       success: true,
       data: {
@@ -110,6 +181,15 @@ export async function getEducatorPublicProfile(
         zipCode: profile.zipCode,
         address: profile.address,
         bio: profile.bio,
+        lat: profile.lat,
+        lng: profile.lng,
+        bannerUrl: profile.bannerUrl,
+        profilePhotoUrl: profile.profilePhotoUrl,
+        clerkPhotoUrl,
+        galleryUrls: profile.galleryUrls,
+        showLocationMap: profile.showLocationMap,
+        personalDogs,
+        educatedDogs,
         services: profile.services.map((service) => ({
           id: service.id,
           title: service.title,
@@ -119,8 +199,12 @@ export async function getEducatorPublicProfile(
         })),
       },
     };
-  } catch {
-    return { success: false, error: "Erreur serveur." };
+  } catch (error) {
+    console.error("[getEducatorPublicProfile]", error);
+    return {
+      success: false,
+      error: prismaErrorMessage(error) ?? "Erreur serveur.",
+    };
   }
 }
 
@@ -273,55 +357,13 @@ export async function createBooking(
       return { success: false, error: "Service introuvable." };
     }
 
-    const dateParis = new Intl.DateTimeFormat("en-CA", {
-      timeZone: "Europe/Paris",
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-    }).format(slotStart);
-
     const booking = await prisma.$transaction(async (tx) => {
-      const slotsResult = await getAvailableSlots({
+      await assertEducatorSlotAvailable(tx, {
         educatorProfileId,
-        serviceId,
-        dateParis,
+        serviceId: service.id,
+        slotStart,
+        durationMinutes: service.durationMinutes,
       });
-
-      if (!slotsResult.success) {
-        throw new Error(slotsResult.error);
-      }
-
-      const stillAvailable = slotsResult.data.some(
-        (slot) => slot.startUtcIso === slotStart.toISOString(),
-      );
-
-      if (!stillAvailable) {
-        throw new Error(
-          "SLOT_UNAVAILABLE:Ce créneau n’est plus disponible. Choisissez un autre horaire.",
-        );
-      }
-
-      const { startUtc, endUtc } = parisDateStringToBounds(dateParis);
-      const blocking = await tx.booking.findMany({
-        where: {
-          educatorProfileId,
-          status: { in: bookingStatusesBlockingAvailability() },
-          dateTime: { gte: startUtc, lte: endUtc },
-        },
-        include: { service: { select: { durationMinutes: true } } },
-      });
-
-      if (
-        overlapsExistingBooking(
-          slotStart,
-          service.durationMinutes,
-          blocking,
-        )
-      ) {
-        throw new Error(
-          "SLOT_UNAVAILABLE:Ce créneau vient d’être réservé. Choisissez un autre horaire.",
-        );
-      }
 
       return tx.booking.create({
         data: {
@@ -336,21 +378,40 @@ export async function createBooking(
       });
     });
 
+    const details = await prisma.booking.findUnique({
+      where: { id: booking.id },
+      include: {
+        client: { select: { name: true } },
+        dog: { select: { name: true } },
+        service: { select: { title: true } },
+      },
+    });
+
+    if (details) {
+      await notifyEducatorBookingRequest({
+        educatorProfileId,
+        bookingId: details.id,
+        clientName: details.client.name,
+        dogName: details.dog.name,
+        serviceTitle: details.service.title,
+        dateTime: details.dateTime,
+      });
+    }
+
     revalidatePath("/dashboard/chiens");
-    revalidatePath("/dashboard", "layout");
+    revalidatePath("/dashboard/clients");
     revalidatePath("/dashboard/agenda");
-    revalidatePath("/dashboard/seances");
+    revalidatePath("/dashboard/reservations");
+    revalidatePath("/dashboard", "layout");
     revalidatePath("/account");
 
     return { success: true, bookingId: booking.id };
   } catch (error) {
+    const slotMsg = slotUnavailableMessage(error);
+    if (slotMsg) {
+      return { success: false, error: slotMsg };
+    }
     if (error instanceof Error) {
-      if (error.message.startsWith("SLOT_UNAVAILABLE:")) {
-        return {
-          success: false,
-          error: error.message.slice("SLOT_UNAVAILABLE:".length),
-        };
-      }
       if (
         error.message !== "Erreur serveur." &&
         !error.message.includes("Prisma")

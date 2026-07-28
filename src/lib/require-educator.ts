@@ -10,6 +10,10 @@ export type EducatorContext = {
   address: string;
 };
 
+export type EducatorUserContext = EducatorContext & {
+  userId: string;
+};
+
 export async function requireEducatorProfile(): Promise<
   ActionResult<EducatorContext>
 > {
@@ -31,6 +35,38 @@ export async function requireEducatorProfile(): Promise<
     return {
       success: true,
       data: {
+        educatorProfileId: user.educatorProfile.id,
+        city: user.educatorProfile.city,
+        address: user.educatorProfile.address,
+      },
+    };
+  } catch {
+    return { success: false, error: "Impossible de charger le profil éducateur." };
+  }
+}
+
+export async function requireEducatorUserId(): Promise<
+  ActionResult<EducatorUserContext>
+> {
+  const { userId: clerkId } = await auth();
+  if (!clerkId) {
+    return { success: false, error: "Vous devez être connecté." };
+  }
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: { clerkId },
+      include: { educatorProfile: true },
+    });
+
+    if (!user || user.role !== Role.EDUCATOR || !user.educatorProfile) {
+      return { success: false, error: "Profil éducateur introuvable." };
+    }
+
+    return {
+      success: true,
+      data: {
+        userId: user.id,
         educatorProfileId: user.educatorProfile.id,
         city: user.educatorProfile.city,
         address: user.educatorProfile.address,

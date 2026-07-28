@@ -6,21 +6,22 @@ import { GraduationCap, PawPrint } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { Role } from "@/generated/prisma/client";
 import { findAppUserByClerkId } from "@/lib/db-user";
+import { homeSpaceForRole } from "@/lib/role-routes";
 import { cn } from "@/lib/utils";
 
 export default async function HomePage() {
   const { userId } = await auth();
   let spaceHref = "/onboarding";
   let spaceLabel = "Continuer l'inscription";
+  let userRole: Role | null = null;
 
   if (userId) {
     const appUser = await findAppUserByClerkId(userId);
-    if (appUser?.role === Role.EDUCATOR) {
-      spaceHref = "/dashboard";
-      spaceLabel = "Tableau de bord";
-    } else if (appUser?.role === Role.CLIENT) {
-      spaceHref = "/account";
-      spaceLabel = "Mon compte";
+    if (appUser?.role === Role.EDUCATOR || appUser?.role === Role.CLIENT) {
+      userRole = appUser.role;
+      const space = homeSpaceForRole(appUser.role);
+      spaceHref = space.href;
+      spaceLabel = space.label;
     }
   }
 
@@ -34,17 +35,17 @@ export default async function HomePage() {
           DogLib
         </Link>
         <nav className="flex items-center gap-2">
-          {userId ? (
-            <>
-              <Link
-                href={spaceHref}
-                className={buttonVariants({ variant: "outline", size: "sm" })}
-              >
-                {spaceLabel}
-              </Link>
-              <UserButton />
-            </>
-          ) : (
+            {userId ? (
+              <>
+                <Link
+                  href={spaceHref}
+                  className={buttonVariants({ variant: "outline", size: "sm" })}
+                >
+                  {spaceLabel}
+                </Link>
+                <UserButton />
+              </>
+            ) : (
             <>
               <Link
                 href="/sign-in"
@@ -97,45 +98,66 @@ export default async function HomePage() {
             />
             <h2 className="mt-4 font-semibold">Éducateurs</h2>
             <p className="mt-2 text-sm text-muted-foreground">
-              Agenda, clients, séances et revenus — après inscription, complétez
+              Agenda, clients, réservations et revenus — après inscription, complétez
               votre profil professionnel pour accéder au dashboard.
             </p>
-            <Link
-              href={userId ? spaceHref : "/sign-up"}
-              className={cn(buttonVariants({ variant: "link" }), "mt-3 px-0")}
-            >
-              {userId ? spaceLabel : "S'inscrire comme éducateur →"}
-            </Link>
+            {userRole === Role.EDUCATOR ? (
+              <Link
+                href={spaceHref}
+                className={cn(buttonVariants({ variant: "link" }), "mt-3 px-0")}
+              >
+                {spaceLabel} →
+              </Link>
+            ) : userRole === Role.CLIENT ? (
+              <p className="mt-3 text-sm text-muted-foreground">
+                Espace réservé aux comptes éducateur.
+              </p>
+            ) : (
+              <Link
+                href={userId ? spaceHref : "/sign-up"}
+                className={cn(buttonVariants({ variant: "link" }), "mt-3 px-0")}
+              >
+                {userId ? spaceLabel : "S'inscrire comme éducateur →"}
+              </Link>
+            )}
           </div>
           <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
             <PawPrint className="size-8 text-accent-foreground" aria-hidden />
             <h2 className="mt-4 font-semibold">Propriétaires</h2>
             <p className="mt-2 text-sm text-muted-foreground">
-              Parcourez les éducateurs près de chez vous et réservez une séance
+              Parcourez les éducateurs près de chez vous et réservez une réservation
               en ligne.
             </p>
             <div className="mt-3 flex flex-col items-start gap-1">
-              <Link
-                href="/recherche"
-                className={cn(buttonVariants({ variant: "link" }), "px-0")}
-              >
-                Trouver un éducateur →
-              </Link>
-              {userId && spaceHref === "/account" ? (
-                <Link
-                  href="/account"
-                  className={cn(buttonVariants({ variant: "link" }), "px-0")}
-                >
-                  Gérer mes chiens →
-                </Link>
-              ) : !userId ? (
-                <Link
-                  href="/sign-up"
-                  className={cn(buttonVariants({ variant: "link" }), "px-0")}
-                >
-                  S&apos;inscrire comme propriétaire →
-                </Link>
-              ) : null}
+              {userRole === Role.EDUCATOR ? (
+                <p className="text-sm text-muted-foreground">
+                  La réservation en ligne est réservée aux comptes propriétaire.
+                </p>
+              ) : (
+                <>
+                  <Link
+                    href="/recherche"
+                    className={cn(buttonVariants({ variant: "link" }), "px-0")}
+                  >
+                    Trouver un éducateur →
+                  </Link>
+                  {userRole === Role.CLIENT ? (
+                    <Link
+                      href="/account"
+                      className={cn(buttonVariants({ variant: "link" }), "px-0")}
+                    >
+                      Mon espace propriétaire →
+                    </Link>
+                  ) : !userId ? (
+                    <Link
+                      href="/sign-up"
+                      className={cn(buttonVariants({ variant: "link" }), "px-0")}
+                    >
+                      S&apos;inscrire comme propriétaire →
+                    </Link>
+                  ) : null}
+                </>
+              )}
             </div>
           </div>
         </div>

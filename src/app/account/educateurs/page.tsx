@@ -1,10 +1,11 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { searchMarketplaceEducators } from "@/actions/marketplace";
 import { getClientLocation } from "@/actions/client-profile";
+import { ClientNearbyEducatorsMapLazy } from "@/components/client/client-nearby-educators-map-lazy";
 import { EducatorMarketplaceCard } from "@/components/marketplace/educator-marketplace-card";
 import { buttonVariants } from "@/components/ui/button";
-import Link from "next/link";
 
 export default async function ClientEducatorsPage() {
   const locationResult = await getClientLocation();
@@ -22,13 +23,11 @@ export default async function ClientEducatorsPage() {
   const educators = searchResult.success ? searchResult.data : [];
 
   return (
-    <div className="mx-auto w-full min-w-0 max-w-5xl space-y-6">
+    <div className="w-full min-w-0 space-y-8">
       <div className="min-w-0">
-        <h1 className="text-2xl font-bold tracking-tight">
-          Éducateurs près de chez vous
-        </h1>
-        <p className="mt-1 break-words text-sm text-muted-foreground">
-          Depuis {loc.address}, {loc.zipCode} {loc.city} — rayon 80 km.
+        <p className="break-words text-sm text-muted-foreground">
+          Depuis {loc.address}, {loc.zipCode} {loc.city} — déplacez la carte
+          pour élargir la zone.
         </p>
         <Link
           href="/account/profil"
@@ -37,6 +36,14 @@ export default async function ClientEducatorsPage() {
           Modifier mon profil / adresse
         </Link>
       </div>
+
+      <ClientNearbyEducatorsMapLazy
+        homeLat={loc.lat}
+        homeLng={loc.lng}
+        homeLabel={`${loc.address}, ${loc.zipCode} ${loc.city}`}
+        initialEducators={educators}
+        maxRadiusKm={80}
+      />
 
       {!searchResult.success ? (
         <p className="text-sm text-destructive">{searchResult.error}</p>
@@ -51,10 +58,13 @@ export default async function ClientEducatorsPage() {
           .
         </div>
       ) : (
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {educators.map((educator) => (
-            <EducatorMarketplaceCard key={educator.id} educator={educator} />
-          ))}
+        <div>
+          <h2 className="mb-4 text-lg font-bold text-foreground">Liste</h2>
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {educators.map((educator) => (
+              <EducatorMarketplaceCard key={educator.id} educator={educator} />
+            ))}
+          </div>
         </div>
       )}
     </div>

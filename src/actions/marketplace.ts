@@ -166,6 +166,8 @@ export async function searchMarketplaceEducators(
         specialties,
         photoUrl: photos.get(profile.user.clerkId) ?? null,
         distanceKm: itemDistance,
+        lat: profile.lat,
+        lng: profile.lng,
       };
     });
 

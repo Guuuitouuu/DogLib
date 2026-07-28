@@ -5,10 +5,8 @@ import { z } from "zod";
 
 import { BookingStatus } from "@/generated/prisma/client";
 import type { ActionResult } from "@/lib/action-result";
-import {
-  clientCanCancelBooking,
-  clientCancelBlockedMessage,
-} from "@/lib/client-booking-policy";
+import { clientCanCancelBooking, clientCancelBlockedMessage } from "@/lib/client-booking-policy";
+import { notifyEducatorBookingCancelledByClient } from "@/lib/educator-notification-create";
 import {
   formatTimeParis,
   toParisDateString,
@@ -155,7 +153,11 @@ export async function cancelClientBooking(
         id: parsed.data.bookingId,
         userId: client.data.userId,
       },
-      select: { id: true, dateTime: true, status: true },
+      include: {
+        client: { select: { name: true } },
+        dog: { select: { name: true } },
+        service: { select: { title: true } },
+      },
     });
 
     if (!booking) {
@@ -188,10 +190,21 @@ export async function cancelClientBooking(
       data: { status: BookingStatus.CANCELLED },
     });
 
+    await notifyEducatorBookingCancelledByClient({
+      educatorProfileId: booking.educatorProfileId,
+      bookingId: booking.id,
+      clientName: booking.client.name,
+      dogName: booking.dog.name,
+      serviceTitle: booking.service.title,
+      dateTime: booking.dateTime,
+    });
+
     revalidatePath("/account");
     revalidatePath("/account/chiens");
     revalidatePath("/dashboard/agenda");
-    revalidatePath("/dashboard/seances");
+    revalidatePath("/dashboard/reservations");
+    revalidatePath("/dashboard/clients");
+    revalidatePath("/dashboard", "layout");
 
     return { success: true, data: { id: booking.id } };
   } catch (error) {

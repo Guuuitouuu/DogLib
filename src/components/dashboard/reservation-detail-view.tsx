@@ -25,11 +25,11 @@ import { BookingStatus } from "@/lib/booking-status";
 import { cn } from "@/lib/utils";
 import type { EducatorBookingItem } from "@/types/educator-booking";
 
-type SessionDetailViewProps = {
+type ReservationDetailViewProps = {
   booking: EducatorBookingItem;
 };
 
-function formatSessionDateLong(dateParis: string): string {
+function formatReservationDateLong(dateParis: string): string {
   const [y, m, d] = dateParis.split("-").map(Number);
   const utc = new Date(Date.UTC(y, m - 1, d, 12, 0, 0));
   return new Intl.DateTimeFormat("fr-FR", {
@@ -41,7 +41,7 @@ function formatSessionDateLong(dateParis: string): string {
   }).format(utc);
 }
 
-export function SessionDetailView({ booking }: SessionDetailViewProps) {
+export function ReservationDetailView({ booking }: ReservationDetailViewProps) {
   const router = useRouter();
   const [report, setReport] = useState(booking.postSessionReport ?? "");
   const [saving, setSaving] = useState(false);
@@ -78,10 +78,10 @@ export function SessionDetailView({ booking }: SessionDetailViewProps) {
     <div className="mx-auto max-w-3xl space-y-6">
       <div className="flex flex-wrap items-center gap-3">
         <Link
-          href="/dashboard/seances"
+          href="/dashboard/reservations"
           className={buttonVariants({ variant: "outline", size: "sm" })}
         >
-          ← Retour aux séances
+          ← Retour aux réservations
         </Link>
       </div>
 
@@ -116,7 +116,7 @@ export function SessionDetailView({ booking }: SessionDetailViewProps) {
             <div>
               <dt className="text-muted-foreground">Date</dt>
               <dd className="font-medium capitalize text-foreground">
-                {formatSessionDateLong(booking.dateParis)}
+                {formatReservationDateLong(booking.dateParis)}
               </dd>
             </div>
             <div>
@@ -147,10 +147,10 @@ export function SessionDetailView({ booking }: SessionDetailViewProps) {
 
       <Card>
         <CardHeader>
-          <CardTitle>Compte-rendu de séance</CardTitle>
+          <CardTitle>Compte-rendu de réservation</CardTitle>
           <CardDescription>
             {readOnly
-              ? "Cette séance est annulée ; le compte-rendu n’est plus modifiable."
+              ? "Cette réservation est annulée ; le compte-rendu n’est plus modifiable."
               : "Visible pour vous uniquement. Décrivez le déroulé, les progrès et les exercices à refaire."}
           </CardDescription>
         </CardHeader>
@@ -162,9 +162,9 @@ export function SessionDetailView({ booking }: SessionDetailViewProps) {
           ) : (
             <form onSubmit={(e) => void saveReport(e)} className="space-y-4">
               <div className="space-y-1.5">
-                <Label htmlFor="session-report">Notes</Label>
+                <Label htmlFor="reservation-report">Notes</Label>
                 <textarea
-                  id="session-report"
+                  id="reservation-report"
                   value={report}
                   onChange={(e) => {
                     setReport(e.target.value);

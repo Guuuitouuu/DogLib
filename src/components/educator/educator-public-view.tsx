@@ -386,7 +386,7 @@ function BookingDialog({
     <Dialog open={open} onOpenChange={handleDialogOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Réserver une séance</DialogTitle>
+          <DialogTitle>Réserver une réservation</DialogTitle>
           <DialogDescription>
             {service && slot
               ? `${service.title} · ${slot.label} (Paris)`

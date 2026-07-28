@@ -14,7 +14,7 @@ import { prisma } from "@/lib/prisma";
 import type {
   EducatorDogDetail,
   EducatorDogListItem,
-  EducatorDogSessionItem,
+  EducatorDogReservationItem,
 } from "@/types/educator-dog";
 
 const dogIdSchema = z.object({
@@ -48,13 +48,13 @@ function buildListItem(
     breed: dog.breed,
     age: dog.age,
     ownerName,
-    sessionsCount: bookings.filter((b) => b.status !== "CANCELLED").length,
-    lastSessionDateParis: last ? toParisDateString(last.dateTime) : null,
+    reservationsCount: bookings.filter((b) => b.status !== "CANCELLED").length,
+    lastReservationDateParis: last ? toParisDateString(last.dateTime) : null,
     reportsCount,
   };
 }
 
-function mapSession(row: BookingWithRelations): EducatorDogSessionItem {
+function mapReservation(row: BookingWithRelations): EducatorDogReservationItem {
   return {
     bookingId: row.id,
     dateParis: toParisDateString(row.dateTime),
@@ -124,15 +124,19 @@ export async function listEducatorDogs(): Promise<
     }
 
     const items = [...byDog.values()]
-      .filter(({ bookings: dogBookings }) =>
-        dogBookings.some((b) => b.status !== "CANCELLED"),
-      )
       .map(({ dog, ownerName, bookings: dogBookings }) =>
         buildListItem(dog, ownerName, dogBookings),
       )
       .sort((a, b) => a.name.localeCompare(b.name, "fr"));
 
-    return { success: true, data: items };
+    const seen = new Set<string>();
+    const deduped = items.filter((item) => {
+      if (seen.has(item.id)) return false;
+      seen.add(item.id);
+      return true;
+    });
+
+    return { success: true, data: deduped };
   } catch (error) {
     console.error("[listEducatorDogs]", error);
     return {
@@ -186,7 +190,7 @@ export async function getEducatorDogById(
         medicalNotes: dog.medicalNotes,
         ownerName: client.name,
         ownerEmail: client.email,
-        sessions: bookings.map(mapSession),
+        reservations: bookings.map(mapReservation),
       },
     };
   } catch (error) {

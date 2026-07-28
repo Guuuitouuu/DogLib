@@ -16,10 +16,22 @@ import type {
   ClientDashboardSummary,
   ClientDogDetail,
   ClientDogListItem,
-  ClientDogSessionItem,
+  ClientDogReservationItem,
 } from "@/types/client-dashboard";
 
 const dogIdSchema = z.object({ dogId: z.string().min(1) });
+
+const photoUrlSchema = z
+  .string()
+  .max(2048)
+  .optional()
+  .refine(
+    (value) => {
+      if (value === undefined || value === "") return true;
+      return value.startsWith("/") || /^https?:\/\//i.test(value);
+    },
+    { message: "URL de photo invalide." },
+  );
 
 const createDogSchema = z.object({
   name: z.string().min(1).max(80),
@@ -27,20 +39,21 @@ const createDogSchema = z.object({
   age: z.coerce.number().int().min(0).max(30).optional(),
   behavioralNotes: z.string().max(5000).optional(),
   medicalNotes: z.string().max(5000).optional(),
+  photoUrl: photoUrlSchema,
 });
 
 const updateDogSchema = createDogSchema.extend({
   dogId: z.string().min(1),
 });
 
-function mapSession(row: {
+function mapReservation(row: {
   id: string;
   dateTime: Date;
   status: BookingStatus;
   postSessionReport: string | null;
   service: { title: string };
   educator: { id: string; user: { name: string } };
-}): ClientDogSessionItem {
+}): ClientDogReservationItem {
   return {
     bookingId: row.id,
     dateParis: toParisDateString(row.dateTime),
@@ -74,7 +87,7 @@ export async function getClientDashboardSummary(): Promise<
       }),
     ]);
 
-    const completedSessions = bookings.filter(
+    const completedReservations = bookings.filter(
       (b) => b.status === BookingStatus.COMPLETED,
     ).length;
     const reportsCount = bookings.filter(
@@ -85,8 +98,8 @@ export async function getClientDashboardSummary(): Promise<
       success: true,
       data: {
         dogsCount,
-        totalSessions: bookings.length,
-        completedSessions,
+        totalReservations: bookings.length,
+        completedReservations,
         reportsCount,
       },
     };
@@ -122,7 +135,8 @@ export async function listClientDogs(): Promise<
       name: dog.name,
       breed: dog.breed,
       age: dog.age,
-      sessionsCount: dog.bookings.length,
+      photoUrl: dog.photoUrl,
+      reservationsCount: dog.bookings.length,
       reportsCount: dog.bookings.filter(
         (b) => b.postSessionReport && b.postSessionReport.trim().length > 0,
       ).length,
@@ -182,11 +196,12 @@ export async function getClientDogById(
         name: dog.name,
         breed: dog.breed,
         age: dog.age,
+        photoUrl: dog.photoUrl,
         behavioralNotes: dog.behavioralNotes,
         medicalNotes: dog.medicalNotes,
-        sessionsCount: nonCancelled.length,
-        completedSessionsCount: completed.length,
-        sessions: dog.bookings.map(mapSession),
+        reservationsCount: nonCancelled.length,
+        completedReservationsCount: completed.length,
+        reservations: dog.bookings.map(mapReservation),
       },
     };
   } catch (error) {
@@ -218,6 +233,7 @@ export async function createClientDog(
         age: parsed.data.age ?? null,
         behavioralNotes: parsed.data.behavioralNotes?.trim() || null,
         medicalNotes: parsed.data.medicalNotes?.trim() || null,
+        photoUrl: parsed.data.photoUrl?.trim() || null,
       },
       select: { id: true, name: true, breed: true },
     });
@@ -262,12 +278,14 @@ export async function updateClientDog(
         age: parsed.data.age ?? null,
         behavioralNotes: parsed.data.behavioralNotes?.trim() || null,
         medicalNotes: parsed.data.medicalNotes?.trim() || null,
+        photoUrl: parsed.data.photoUrl?.trim() || null,
       },
     });
 
     revalidatePath("/account");
     revalidatePath("/account/chiens");
     revalidatePath(`/account/chiens/${existing.id}`);
+    revalidatePath(`/account/chiens/${existing.id}/comptes-rendus`);
 
     return { success: true, data: { id: existing.id } };
   } catch (error) {

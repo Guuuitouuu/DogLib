@@ -30,7 +30,7 @@ export type TodayBookingItem = {
 };
 
 export type MonthlyStatsData = {
-  completedSessionsCount: number;
+  completedReservationsCount: number;
   revenueCents: number;
   distinctDogsCount: number;
   totalBookingsInPeriod: number;
@@ -97,7 +97,7 @@ export async function getTodayBookings(): Promise<
       data: bookings.map((b) => mapTodayBooking(b, location)),
     };
   } catch {
-    return { success: false, error: "Impossible de charger les séances du jour." };
+    return { success: false, error: "Impossible de charger les réservations du jour." };
   }
 }
 
@@ -149,7 +149,7 @@ export async function getMonthlyStats(): Promise<
     return {
       success: true,
       data: {
-        completedSessionsCount: completedBookings.length,
+        completedReservationsCount: completedBookings.length,
         revenueCents,
         distinctDogsCount: distinctDogs.length,
         totalBookingsInPeriod,
@@ -183,7 +183,7 @@ export async function updateBookingReport(
     });
 
     if (!booking) {
-      return { success: false, error: "Séance introuvable ou accès refusé." };
+      return { success: false, error: "Réservation introuvable ou accès refusé." };
     }
 
     await prisma.booking.update({
@@ -191,8 +191,8 @@ export async function updateBookingReport(
       data: { postSessionReport: parsed.data.report.trim() },
     });
 
-    revalidatePath("/dashboard/seances");
-    revalidatePath(`/dashboard/seances/${booking.id}`);
+    revalidatePath("/dashboard/reservations");
+    revalidatePath(`/dashboard/reservations/${booking.id}`);
     revalidatePath("/dashboard/chiens");
     revalidatePath(`/dashboard/chiens/${booking.dogId}`);
 

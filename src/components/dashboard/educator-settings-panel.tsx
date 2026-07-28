@@ -1,6 +1,6 @@
 "use client";
 
-import { ExternalLink, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -9,7 +9,7 @@ import {
   updateEducatorPublicProfile,
   type EducatorProfileSettings,
 } from "@/actions/educator-profile";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -29,13 +29,10 @@ export function EducatorSettingsPanel({ profile }: EducatorSettingsPanelProps) {
   const [address, setAddress] = useState(profile.address);
   const [city, setCity] = useState(profile.city);
   const [zipCode, setZipCode] = useState(profile.zipCode);
-  const [bio, setBio] = useState(profile.bio ?? "");
   const [siret, setSiret] = useState(profile.siret ?? "");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
-
-  const publicUrl = `/educator/${profile.educatorProfileId}`;
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -47,7 +44,7 @@ export function EducatorSettingsPanel({ profile }: EducatorSettingsPanelProps) {
       address: address.trim(),
       city: city.trim(),
       zipCode: zipCode.trim(),
-      bio: bio.trim() || undefined,
+      bio: profile.bio?.trim() || undefined,
       siret: siret.trim() || undefined,
     });
 
@@ -61,33 +58,20 @@ export function EducatorSettingsPanel({ profile }: EducatorSettingsPanelProps) {
   }
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
+    <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Page publique</CardTitle>
+          <CardTitle>Coordonnées professionnelles</CardTitle>
           <CardDescription>
-            C’est ce que voient les propriétaires avant de réserver une séance.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Link
-            href={publicUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={buttonVariants({ variant: "outline" })}
-          >
-            Voir ma page publique
-            <ExternalLink className="size-4" aria-hidden />
-          </Link>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Profil affiché en ligne</CardTitle>
-          <CardDescription>
-            Bio, adresse et ville apparaissent sur votre fiche éducateur et
-            servent au calcul des séances.
+            Adresse utilisée sur la carte publique et pour la recherche par
+            proximité. Personnalisez le visuel dans{" "}
+            <Link
+              href="/dashboard/fiche-publique"
+              className="font-medium text-primary underline-offset-2 hover:underline"
+            >
+              Ma fiche publique
+            </Link>
+            .
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -125,18 +109,6 @@ export function EducatorSettingsPanel({ profile }: EducatorSettingsPanelProps) {
                   maxLength={5}
                 />
               </div>
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="settings-bio">Bio (optionnel)</Label>
-              <textarea
-                id="settings-bio"
-                value={bio}
-                onChange={(e) => setBio(e.target.value)}
-                rows={5}
-                maxLength={5000}
-                className="flex min-h-[100px] w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
-                placeholder="Votre approche, vos spécialités…"
-              />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="settings-siret">SIRET (optionnel)</Label>

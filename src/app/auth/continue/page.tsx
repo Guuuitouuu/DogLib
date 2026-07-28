@@ -8,7 +8,8 @@ import {
   educatorProfileIsComplete,
   findAppUserByClerkId,
 } from "@/lib/db-user";
-import { safeRelativeRedirect } from "@/lib/safe-redirect";
+import { clientAddressIsComplete } from "@/lib/client-location";
+import { resolvePostAuthRedirect } from "@/lib/role-routes";
 
 type AuthContinuePageProps = {
   searchParams: Promise<{ redirect_url?: string }>;
@@ -29,14 +30,14 @@ export default async function AuthContinuePage({
     if (!clientAddressIsComplete(appUser)) {
       redirect("/onboarding/client");
     }
-    redirect(safeRelativeRedirect(redirectUrl, "/account"));
+    redirect(resolvePostAuthRedirect(Role.CLIENT, redirectUrl));
   }
 
   if (appUser?.role === Role.EDUCATOR) {
     if (!educatorProfileIsComplete(appUser)) {
       redirect("/onboarding/educator");
     }
-    redirect(safeRelativeRedirect(redirectUrl, "/dashboard"));
+    redirect(resolvePostAuthRedirect(Role.EDUCATOR, redirectUrl));
   }
 
   const clerkUser = await currentUser();

@@ -2,7 +2,7 @@ import type { MonthlyStatsData, TodayBookingItem } from "@/actions/educator";
 import { BookingStatus } from "@/generated/prisma/client";
 
 export const demoMonthlyStats: MonthlyStatsData = {
-  completedSessionsCount: 12,
+  completedReservationsCount: 12,
   revenueCents: 84000,
   distinctDogsCount: 9,
   totalBookingsInPeriod: 16,

@@ -3,7 +3,8 @@ export type ClientDogListItem = {
   name: string;
   breed: string | null;
   age: number | null;
-  sessionsCount: number;
+  photoUrl: string | null;
+  reservationsCount: number;
   reportsCount: number;
 };
 
@@ -12,14 +13,15 @@ export type ClientDogDetail = {
   name: string;
   breed: string | null;
   age: number | null;
+  photoUrl: string | null;
   behavioralNotes: string | null;
   medicalNotes: string | null;
-  sessionsCount: number;
-  completedSessionsCount: number;
-  sessions: ClientDogSessionItem[];
+  reservationsCount: number;
+  completedReservationsCount: number;
+  reservations: ClientDogReservationItem[];
 };
 
-export type ClientDogSessionItem = {
+export type ClientDogReservationItem = {
   bookingId: string;
   dateParis: string;
   timeParis: string;
@@ -32,8 +34,8 @@ export type ClientDogSessionItem = {
 
 export type ClientDashboardSummary = {
   dogsCount: number;
-  totalSessions: number;
-  completedSessions: number;
+  totalReservations: number;
+  completedReservations: number;
   reportsCount: number;
 };
 

@@ -2,79 +2,84 @@ import Link from "next/link";
 import { Clock } from "lucide-react";
 
 import type { EducatorPublicService } from "@/actions/booking";
-import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { formatPriceEurosFromCents } from "@/lib/format-price";
 
 type EducatorPublicServicesProps = {
   educatorProfileId: string;
   services: EducatorPublicService[];
+  showReserveActions?: boolean;
 };
 
 export function EducatorPublicServices({
   educatorProfileId,
   services,
+  showReserveActions = true,
 }: EducatorPublicServicesProps) {
   if (services.length === 0) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Services</CardTitle>
-          <CardDescription>
-            Cet éducateur n&apos;a pas encore publié de services actifs.
-          </CardDescription>
-        </CardHeader>
-      </Card>
+      <section
+        id="prestations"
+        className="rounded-3xl border border-border bg-card p-6 shadow-sm"
+      >
+        <h2 className="text-lg font-bold text-foreground">Prestations</h2>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Cet éducateur n&apos;a pas encore publié de services actifs.
+        </p>
+      </section>
     );
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Services</CardTitle>
-        <CardDescription>
-          Tarifs et durées des séances proposées par cet éducateur.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-3">
+    <section
+      id="prestations"
+      className="rounded-3xl border border-border bg-card p-6 shadow-sm"
+    >
+      <div>
+        <h2 className="text-lg font-bold text-foreground">Prestations</h2>
+        <p className="text-sm text-muted-foreground">
+          Services proposés à la réservation
+        </p>
+      </div>
+
+      <ul className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
         {services.map((service) => (
-          <article
+          <li
             key={service.id}
-            className="flex flex-col gap-4 rounded-xl border border-border p-4 sm:flex-row sm:items-center sm:justify-between"
+            className="flex flex-col rounded-2xl border border-border p-4"
           >
-            <div className="min-w-0 flex-1">
-              <div className="flex flex-wrap items-center gap-2">
-                <h3 className="font-semibold text-foreground">{service.title}</h3>
-                <Badge variant="secondary">
-                  {formatPriceEurosFromCents(service.priceCents)}
-                </Badge>
-              </div>
-              <p className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground">
+            <p className="font-bold text-foreground">{service.title}</p>
+            {service.description ? (
+              <p className="mt-1 flex-1 text-sm leading-relaxed text-muted-foreground">
+                {service.description}
+              </p>
+            ) : (
+              <p className="mt-1 flex-1 text-sm text-muted-foreground">
+                Durée {service.durationMinutes} minutes
+              </p>
+            )}
+            <div className="mt-3 flex items-center justify-between border-t border-border pt-3">
+              <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
                 <Clock className="size-3.5" aria-hidden />
                 {service.durationMinutes} min
-              </p>
-              {service.description ? (
-                <p className="mt-2 text-sm text-muted-foreground">
-                  {service.description}
-                </p>
-              ) : null}
+              </span>
+              <span className="text-base font-extrabold text-primary">
+                {formatPriceEurosFromCents(service.priceCents)}
+              </span>
             </div>
-            <Link
-              href={`/educator/${educatorProfileId}/reserver?serviceId=${encodeURIComponent(service.id)}`}
-              className={buttonVariants({ className: "shrink-0" })}
-            >
-              Réserver
-            </Link>
-          </article>
+            {showReserveActions ? (
+              <Link
+                href={`/educator/${educatorProfileId}/reserver?serviceId=${encodeURIComponent(service.id)}`}
+                className={buttonVariants({
+                  className: "mt-4 w-full rounded-xl",
+                })}
+              >
+                Réserver
+              </Link>
+            ) : null}
+          </li>
         ))}
-      </CardContent>
-    </Card>
+      </ul>
+    </section>
   );
 }

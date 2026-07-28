@@ -12,7 +12,7 @@ export const bookingStatusLabels: Record<BookingStatusValue, string> = {
   [BookingStatus.CANCELLED]: "Annulée",
 };
 
-/** Pastille / badge (liste, séances du jour) */
+/** Pastille / badge (liste, réservations du jour) */
 export const bookingStatusBadgeStyles: Record<BookingStatusValue, string> = {
   [BookingStatus.CONFIRMED]: "bg-primary/15 text-primary",
   [BookingStatus.PENDING]: "bg-accent text-accent-foreground",
@@ -54,7 +54,7 @@ export const bookingStatusFilters: {
   { value: BookingStatus.CANCELLED, label: "Annulées" },
 ];
 
-/** Filtres agenda : les annulées restent visibles uniquement dans Séances. */
+/** Filtres agenda : les annulées restent visibles uniquement dans Réservations. */
 export const agendaStatusFilters = bookingStatusFilters.filter(
   (f) => f.value !== BookingStatus.CANCELLED,
 );

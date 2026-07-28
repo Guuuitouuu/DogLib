@@ -8,6 +8,8 @@ import { Role as RoleEnum } from "@/generated/prisma/client";
 import type { ActionResult } from "@/lib/action-result";
 import { geocodeAddressFr } from "@/lib/geocode-fr";
 import { resolveClerkRole } from "@/lib/clerk-role";
+import { clientAddressIsComplete } from "@/lib/client-location";
+import { educatorProfileIsComplete, findAppUserByClerkId } from "@/lib/db-user";
 import { prismaErrorMessage } from "@/lib/prisma-errors";
 import { prisma } from "@/lib/prisma";
 
@@ -78,7 +80,10 @@ async function syncClerkUserToPrisma(
 export async function setUserRole(
   input: unknown,
 ): Promise<
-  ActionResult<{ role: Role; nextPath: "/onboarding/educator" | "/onboarding/client" }>
+  ActionResult<{
+    role: Role;
+    nextPath: "/onboarding/educator" | "/onboarding/client" | "/dashboard" | "/account";
+  }>
 > {
   const parsed = setRoleSchema.safeParse(input);
   if (!parsed.success) {
@@ -97,6 +102,41 @@ export async function setUserRole(
   }
 
   try {
+    const existing = await findAppUserByClerkId(userId);
+    if (existing) {
+      if (existing.role !== role) {
+        return {
+          success: false,
+          error:
+            existing.role === RoleEnum.EDUCATOR
+              ? "Ce compte est enregistré comme éducateur. Utilisez le tableau de bord éducateur."
+              : "Ce compte est enregistré comme propriétaire. Utilisez l'espace client.",
+        };
+      }
+
+      if (existing.role === RoleEnum.EDUCATOR) {
+        return {
+          success: true,
+          data: {
+            role: RoleEnum.EDUCATOR,
+            nextPath: educatorProfileIsComplete(existing)
+              ? "/dashboard"
+              : "/onboarding/educator",
+          },
+        };
+      }
+
+      return {
+        success: true,
+        data: {
+          role: RoleEnum.CLIENT,
+          nextPath: clientAddressIsComplete(existing)
+            ? "/account"
+            : "/onboarding/client",
+        },
+      };
+    }
+
     const client = await clerkClient();
     await client.users.updateUserMetadata(userId, {
       publicMetadata: { role },

@@ -6,6 +6,8 @@ export type MarketplaceEducatorItem = {
   specialties: string[];
   photoUrl: string | null;
   distanceKm: number | null;
+  lat: number;
+  lng: number;
 };
 
 export type MarketplaceFilterOptions = {

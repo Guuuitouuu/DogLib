@@ -1,30 +1,35 @@
-import { Search, Bell, Plus, PawPrint } from "lucide-react"
+import Link from "next/link"
+import { Search, Plus } from "lucide-react"
+
+import { EducatorNotificationsBell } from "@/components/dashboard/educator-notifications-bell"
+import { EducatorTopbarUserMenu } from "@/components/dashboard/educator-topbar-user-menu"
 
 type TopbarProps = {
   title: string
   eyebrow?: string
   actionLabel?: string
   actionShortLabel?: string
+  /** When set, the primary action is a navigation link. */
+  actionHref?: string
 }
 
 export function Topbar({
   title,
   eyebrow = "Bonjour 👋",
-  actionLabel = "Nouvelle séance",
-  actionShortLabel = "Séance",
+  actionLabel = "Nouvelle réservation",
+  actionShortLabel = "Réservation",
+  actionHref,
 }: TopbarProps) {
+  const actionClassName =
+    "flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-opacity hover:opacity-90"
+
   return (
     <header className="sticky top-0 z-10 flex flex-col gap-4 border-b border-border bg-background/85 px-5 py-4 backdrop-blur md:flex-row md:items-center md:justify-between md:px-8">
-      <div className="flex items-center gap-3">
-        <span className="flex size-9 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm lg:hidden">
-          <PawPrint className="size-4" />
-        </span>
-        <div>
-          <p className="text-sm text-muted-foreground">{eyebrow}</p>
-          <h1 className="text-xl font-bold tracking-tight text-foreground text-balance">
-            {title}
-          </h1>
-        </div>
+      <div>
+        <p className="text-sm text-muted-foreground">{eyebrow}</p>
+        <h1 className="text-xl font-bold tracking-tight text-foreground text-balance">
+          {title}
+        </h1>
       </div>
 
       <div className="flex items-center gap-2.5">
@@ -38,31 +43,23 @@ export function Topbar({
           />
         </div>
 
-        <button
-          type="button"
-          aria-label="Notifications"
-          className="relative flex size-11 items-center justify-center rounded-xl border border-border bg-card text-muted-foreground shadow-sm transition-colors hover:text-foreground"
-        >
-          <Bell className="size-5" />
-          <span className="absolute right-2.5 top-2.5 size-2 rounded-full bg-primary ring-2 ring-card" />
-        </button>
+        <EducatorNotificationsBell />
 
-        <button
-          type="button"
-          className="flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-opacity hover:opacity-90"
-        >
-          <Plus className="size-4" />
-          <span className="hidden sm:inline">{actionLabel}</span>
-          <span className="sm:hidden">{actionShortLabel}</span>
-        </button>
+        {actionHref ? (
+          <Link href={actionHref} className={actionClassName}>
+            <Plus className="size-4" />
+            <span className="hidden sm:inline">{actionLabel}</span>
+            <span className="sm:hidden">{actionShortLabel}</span>
+          </Link>
+        ) : (
+          <button type="button" className={actionClassName}>
+            <Plus className="size-4" />
+            <span className="hidden sm:inline">{actionLabel}</span>
+            <span className="sm:hidden">{actionShortLabel}</span>
+          </button>
+        )}
 
-        <button
-          type="button"
-          aria-label="Mon profil"
-          className="flex size-11 items-center justify-center rounded-xl bg-accent text-sm font-bold text-accent-foreground shadow-sm"
-        >
-          JM
-        </button>
+        <EducatorTopbarUserMenu />
       </div>
     </header>
   )

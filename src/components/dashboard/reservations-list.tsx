@@ -19,12 +19,12 @@ import { formatPriceEurosFromCents } from "@/lib/format-price";
 import { cn } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button";
 
-type SessionsListProps = {
+type ReservationsListProps = {
   bookings: EducatorBookingItem[];
   summary: EducatorBookingSummary | null;
 };
 
-function formatSessionDate(dateParis: string): string {
+function formatReservationDate(dateParis: string): string {
   const [y, m, d] = dateParis.split("-").map(Number);
   const utc = new Date(Date.UTC(y, m - 1, d, 12, 0, 0));
   return new Intl.DateTimeFormat("fr-FR", {
@@ -35,7 +35,7 @@ function formatSessionDate(dateParis: string): string {
   }).format(utc);
 }
 
-export function SessionsList({ bookings, summary }: SessionsListProps) {
+export function ReservationsList({ bookings, summary }: ReservationsListProps) {
   const [filter, setFilter] = useState<BookingStatusFilter>("all");
 
   const visible = useMemo(() => {
@@ -48,19 +48,19 @@ export function SessionsList({ bookings, summary }: SessionsListProps) {
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         {[
           {
-            label: "Séances ce mois",
-            value: summary ? String(summary.sessionsThisMonth) : "—",
+            label: "Réservations ce mois",
+            value: summary ? String(summary.reservationsThisMonth) : "—",
           },
           {
             label: "Heures dispensées",
             value: summary ? `${summary.hoursThisMonth}h` : "—",
           },
           {
-            label: "Séances terminées",
+            label: "Réservations terminées",
             value: summary ? String(summary.completedThisMonth) : "—",
           },
           {
-            label: "Revenu séances",
+            label: "Revenu réservations",
             value: summary
               ? formatPriceEurosFromCents(summary.revenueCentsThisMonth)
               : "—",
@@ -98,7 +98,7 @@ export function SessionsList({ bookings, summary }: SessionsListProps) {
 
       {visible.length === 0 ? (
         <p className="rounded-2xl border border-border bg-card p-6 text-sm text-muted-foreground shadow-sm">
-          Aucune séance pour ce filtre.
+          Aucune réservation pour ce filtre.
         </p>
       ) : (
         <div className="space-y-3">
@@ -135,7 +135,7 @@ export function SessionsList({ bookings, summary }: SessionsListProps) {
 
               <div className="flex flex-wrap items-center gap-x-5 gap-y-1 text-xs text-muted-foreground lg:flex-col lg:items-end lg:gap-1">
                 <span className="font-medium capitalize text-foreground">
-                  {formatSessionDate(s.dateParis)}
+                  {formatReservationDate(s.dateParis)}
                 </span>
                 <span className="flex items-center gap-1">
                   <Clock className="size-3.5" />
@@ -157,7 +157,7 @@ export function SessionsList({ bookings, summary }: SessionsListProps) {
                   compact
                 />
                 <Link
-                  href={`/dashboard/seances/${s.id}`}
+                  href={`/dashboard/reservations/${s.id}`}
                   className={buttonVariants({ variant: "outline", size: "sm" })}
                 >
                   Compte-rendu
